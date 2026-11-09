@@ -465,6 +465,9 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         Fps = 0;
         HasVideo = item.Kind == MediaKind.Video;
         Mpv.SetFlag("pause", false);
+        // Mirrored here: when mpv was already unpaused (after the end of the queue, or a MIDI file) no
+        // "pause" change follows, and the player would think it is still paused.
+        IsPaused = false;
         Mpv.CommandAsync(0, "loadfile", item.Path, "replace");
         Log.Timing("loadfile sent");
         MediaChanged?.Invoke();
@@ -554,13 +557,16 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         }
         if (IsIdle) { Play(_current); return; }
         CancelStepping();
-        if (EndReached && IsPaused)
+        // mpv's own state decides, so play/pause always toggles what is really happening.
+        bool paused = Mpv.GetFlag("pause") ?? IsPaused;
+        if (EndReached && paused)
         {
             // Paused on the last frame: play again from the start.
             _handledEof = false;
             Mpv.Command("seek", "0", "absolute+exact");
         }
-        Mpv.SetFlag("pause", !IsPaused);
+        Mpv.SetFlag("pause", !paused);
+        IsPaused = !paused;
     }
 
     public void Pause()
@@ -574,6 +580,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         CancelStepping();
         SaveMemory(true);
         if (_isMidi) StopMidi();
+        Mpv.SetFlag("pause", true); // mpv agrees with the play button while idle
         Mpv.Command("stop");
         Current = null;
         IsIdle = true;
