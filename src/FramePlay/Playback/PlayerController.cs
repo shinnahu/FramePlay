@@ -152,7 +152,9 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
             // Compiled shaders are cached, so only the very first start pays for compiling them.
             ("gpu-shader-cache", "yes"), ("gpu-shader-cache-dir", Path.Combine(AppPaths.LocalDir, "cache", "shaders")),
             ("icc-cache-dir", Path.Combine(AppPaths.LocalDir, "cache", "icc")),
-            ("hr-seek", "yes"), ("hr-seek-framedrop", "no"),
+            // Exact seeks; frames before the target may be dropped without drawing them (mpv's default),
+            // which makes stepping back much faster. Safe here: FramePlay adds no filters that change timing.
+            ("hr-seek", "yes"), ("hr-seek-framedrop", "yes"),
             ("volume-max", "200"), ("volume", s.Volume.ToString(CultureInfo.InvariantCulture)), ("mute", s.Muted ? "yes" : "no"),
             ("audio-client-name", "FramePlay"), ("title", "FramePlay"),
             ("osd-level", "1"), ("osd-bar", "no"), ("osd-on-seek", "no"), ("osd-duration", "1300"),
@@ -212,7 +214,12 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         switch (name)
         {
             case "pause": IsPaused = value is true; break;
-            case "time-pos": if (value is double t) Position = t; break;
+            case "time-pos":
+                if (value is not double t) break;
+                if (_stepTarget < 0) { Position = t; break; }
+                // Frame stepping: the display keeps showing the target; a frame-step has landed once its frame shows.
+                if (_stepInFlight && _stepExpect >= 0 && TimeFormat.FrameIndex(t, Fps) >= _stepExpect) OnStepLanded();
+                break;
             case "duration": Duration = value is double d ? d : 0; if (_current != null && Duration > 0) _current.Duration = Duration; break;
             case "eof-reached":
                 EndReached = value is true;
@@ -240,6 +247,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
                 if (value is true)
                 {
                     Log.Timing("video output configured");
+                    GpuWarmup.Release(); // mpv has its own Direct3D device now
                     VideoOutputReady?.Invoke();
                 }
                 break;
@@ -433,6 +441,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
 
     public void Play(QueueItem item)
     {
+        CancelStepping();
         SaveMemory(true);
         if (Shuffle && _current != null && _current != item) _shuffleHistory.Add(_current);
         Current = item;
@@ -544,6 +553,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
             return;
         }
         if (IsIdle) { Play(_current); return; }
+        CancelStepping();
         if (EndReached && IsPaused)
         {
             // Paused on the last frame: play again from the start.
@@ -561,6 +571,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
 
     public void Stop()
     {
+        CancelStepping();
         SaveMemory(true);
         if (_isMidi) StopMidi();
         Mpv.Command("stop");
@@ -582,6 +593,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
     public void Seek(double seconds, bool exact = true)
     {
         if (_current == null) return;
+        CancelStepping();
         seconds = Math.Max(0, Duration > 0 ? Math.Min(seconds, Duration) : seconds);
         _handledEof = false;
         if (_isMidi) { _midi?.Seek(seconds); Position = seconds; EndReached = false; return; }
@@ -647,9 +659,21 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         Mpv.CommandAsync(0, "seek", delta.ToString("0.###", CultureInfo.InvariantCulture), "relative+exact");
     }
 
-    private bool _backStepInFlight;
-    private DateTime _backStepAt;
-    private int _queuedBackSteps;
+    // ---------------------------------------------------------------------------------------------
+    // Frame stepping, Premiere style. Every press moves a target frame: the time display shows it at once
+    // and the picture follows as fast as decoding allows. Only one step or seek is in flight at a time,
+    // and when it lands the next one goes straight to the target, so fast presses in both directions
+    // always end on the exact frame (Left, Left, Right = one frame back).
+    // Forward by a few frames: mpv's frame-step, which only decodes the next frame. Backwards, or far
+    // ahead: one exact seek, which has to decode from the previous keyframe.
+    // ---------------------------------------------------------------------------------------------
+    private const int MaxFrameStepChain = 6;
+    private long _stepTarget = -1;     // frame asked for; -1 when not stepping
+    private bool _stepInFlight;
+    private long _stepExpect = -1;     // frame a pending frame-step shows; -1 when a seek is pending
+    private long _stepSeekedTo = -1;   // target of the last seek, so a frame that can't be reached isn't retried forever
+    private long _stepSentAt;
+    private DispatcherTimer? _stepWatchdog;
 
     /// <summary>Steps exactly <paramref name="frames"/> frames (negative = backwards) and pauses, like Premiere's arrow keys.</summary>
     public void StepFrames(int frames)
@@ -662,34 +686,89 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
             Seek(Position + frames / 30.0);
             return;
         }
-        _handledEof = false;
-        if (frames == 1)
-        {
-            Mpv.CommandAsync(0, "frame-step");
-            return;
-        }
-        if (frames == -1)
-        {
-            // Holding Left: back-steps are slow (they decode from the previous keyframe), so key repeats
-            // that arrive meanwhile are counted and applied as one exact seek when the step lands.
-            if (_backStepInFlight && (DateTime.UtcNow - _backStepAt).TotalMilliseconds < 1500)
-            {
-                _queuedBackSteps++;
-                return;
-            }
-            _backStepInFlight = true;
-            _backStepAt = DateTime.UtcNow;
-            _queuedBackSteps = 0;
-            Mpv.CommandAsync(0, "frame-back-step");
-            return;
-        }
         if (Fps <= 0)
         {
             for (int i = 0; i < Math.Abs(frames); i++) Mpv.CommandAsync(0, frames > 0 ? "frame-step" : "frame-back-step");
             return;
         }
-        // Several frames at once (Shift+arrows): one exact seek straight to the target frame.
-        SeekToFrame(TimeFormat.FrameIndex(Mpv.GetDouble("time-pos") ?? Position, Fps) + frames);
+        _handledEof = false;
+        _jumpSettle?.Stop();
+        if (!IsPaused) Mpv.SetFlag("pause", true);
+        long from = _stepTarget >= 0 ? _stepTarget : CurrentFrame();
+        _stepTarget = Math.Clamp(from + frames, 0, LastFrame);
+        Position = _stepTarget / Fps; // the time display answers straight away
+        if (!_stepInFlight) StepTowardTarget();
+    }
+
+    private long CurrentFrame() => TimeFormat.FrameIndex(Mpv.GetDouble("time-pos") ?? Position, Fps);
+
+    private long LastFrame => Duration > 0 ? Math.Max(0, (long)Math.Ceiling(Duration * Fps - 0.5) - 1) : long.MaxValue;
+
+    private void StepTowardTarget()
+    {
+        long current = CurrentFrame();
+        long distance = _stepTarget - current;
+        // There, or the last seek already went for this frame and landed elsewhere (variable frame rate).
+        if (_stepTarget < 0 || distance == 0 || (_stepSeekedTo == _stepTarget && _stepExpect < 0 && _stepSentAt > 0))
+        {
+            FinishStepping();
+            return;
+        }
+        _stepInFlight = true;
+        _stepSentAt = Environment.TickCount64;
+        if (distance is > 0 and <= MaxFrameStepChain)
+        {
+            _stepExpect = current + 1;
+            _stepSeekedTo = -1;
+            Mpv.CommandAsync(0, "frame-step");
+        }
+        else
+        {
+            _stepExpect = -1;
+            _stepSeekedTo = _stepTarget;
+            SeekToFrame(_stepTarget);
+        }
+        if (_stepWatchdog == null)
+        {
+            _stepWatchdog = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+            _stepWatchdog.Tick += (_, _) => { _stepWatchdog!.Stop(); if (_stepInFlight) FinishStepping(); };
+        }
+        _stepWatchdog.Stop();
+        _stepWatchdog.Start();
+    }
+
+    /// <summary>The pending frame-step showed its frame, or the pending seek landed: carry on toward the target.</summary>
+    private void OnStepLanded()
+    {
+        if (!_stepInFlight) return;
+        _stepInFlight = false;
+        _stepWatchdog?.Stop();
+        if (Log.TimingEnabled)
+            Log.Info($"step {(_stepExpect >= 0 ? "frame-step" : "seek")} landed in {Environment.TickCount64 - _stepSentAt} ms");
+        StepTowardTarget();
+    }
+
+    private void FinishStepping()
+    {
+        _stepInFlight = false;
+        _stepTarget = -1;
+        _stepExpect = -1;
+        _stepSeekedTo = -1;
+        _stepSentAt = 0;
+        _stepWatchdog?.Stop();
+        if (Mpv.GetDouble("time-pos") is double t) Position = t;
+    }
+
+    /// <summary>Any other seek, play or new file ends frame stepping.</summary>
+    private void CancelStepping()
+    {
+        if (_stepTarget < 0 && !_stepInFlight) return;
+        _stepInFlight = false;
+        _stepTarget = -1;
+        _stepExpect = -1;
+        _stepSeekedTo = -1;
+        _stepSentAt = 0;
+        _stepWatchdog?.Stop();
     }
 
     /// <summary>Pauses on an exact frame. The target sits a quarter frame early so rounding can't land on the next one.</summary>
@@ -704,12 +783,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
 
     private void OnPlaybackRestart()
     {
-        if (!_backStepInFlight) return;
-        _backStepInFlight = false;
-        if (_queuedBackSteps <= 0) return;
-        int n = _queuedBackSteps;
-        _queuedBackSteps = 0;
-        SeekToFrame(TimeFormat.FrameIndex(Mpv.GetDouble("time-pos") ?? Position, Fps) - n);
+        if (_stepInFlight && _stepExpect < 0) OnStepLanded();
     }
 
     public void SetVolume(double v)

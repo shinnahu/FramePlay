@@ -76,6 +76,7 @@ public partial class MainWindow
     {
         if (_fullscreen) return;
         if (_pip) ExitPip();
+        Video.HoldPictureDuringResize();
         SaveNormalBounds();
         _fullscreen = true;
         SetChromeless(true);
@@ -91,6 +92,7 @@ public partial class MainWindow
     public void ExitFullscreen()
     {
         if (!_fullscreen) return;
+        Video.HoldPictureDuringResize();
         _fullscreen = false;
         Video.HideCursor = false;
         Chrome.ResizeBorderThickness = new Thickness(6);
@@ -116,6 +118,7 @@ public partial class MainWindow
     {
         if (_pip || !Player.HasVideo || Player.IsMidi) return;
         if (_fullscreen) ExitFullscreen();
+        Video.HoldPictureDuringResize();
         SaveNormalBounds();
         _pip = true;
         SetChromeless(true);
@@ -146,6 +149,7 @@ public partial class MainWindow
     public void ExitPip()
     {
         if (!_pip) return;
+        Video.HoldPictureDuringResize();
         _settings.Pip = new WindowBounds { Left = Left, Top = Top, Width = Width, Height = Height };
         _pip = false;
         Player.SetPipSubtitleScale(false);

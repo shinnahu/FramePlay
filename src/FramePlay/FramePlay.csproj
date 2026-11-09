@@ -17,7 +17,7 @@
     <ApplicationIcon>Assets\FramePlay.ico</ApplicationIcon>
     <AssemblyName>FramePlay</AssemblyName>
     <RootNamespace>FramePlay</RootNamespace>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <Product>FramePlay</Product>
     <Company>FramePlay</Company>
     <Copyright>FramePlay</Copyright>

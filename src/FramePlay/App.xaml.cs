@@ -20,8 +20,11 @@ public partial class App : Application
 
     public static AppSettings Settings { get; private set; } = new();
 
+    private readonly DateTime _constructedAt = DateTime.Now;
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        var enteredAt = DateTime.Now;
         base.OnStartup(e);
         _runningMutex = new System.Threading.Mutex(false, "FramePlay.Running");
 
@@ -46,6 +49,13 @@ public partial class App : Application
             Shutdown();
             return;
         }
+        // Load the graphics driver while the window is being built, so the first video frame doesn't wait for it.
+        GpuWarmup.Start();
+        new DispatcherTimer(TimeSpan.FromSeconds(20), DispatcherPriority.Background, (s, _) =>
+        {
+            ((DispatcherTimer)s!).Stop();
+            GpuWarmup.Release(); // nothing played video by now: don't keep the warm-up device around
+        }, Dispatcher).Start();
 
         DispatcherUnhandledException += (_, ex) =>
         {
@@ -55,12 +65,16 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (_, ex) => Log.Error("Unhandled", ex.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, ex) => { Log.Error("Task", ex.Exception); ex.SetObserved(); };
 
-        Log.Timing("OnStartup");
+        Log.Timing($"OnStartup (App constructed at {(_constructedAt - Log.ProcessStart).TotalMilliseconds:0} ms, " +
+                   $"OnStartup entered at {(enteredAt - Log.ProcessStart).TotalMilliseconds:0} ms)");
         HoverTip.Install();
+        Log.Timing("hover tips");
         IconFactory.Register(Resources);
+        Log.Timing("icons");
         Settings = AppSettings.Load();
         if (Settings.ApplyInstallerLanguage()) Settings.Save();
         var history = History.Load();
+        Log.Timing("settings and history");
         Loc.I.SetLanguage(Settings.Language);
         ThemeManager.Apply(ThemeManager.Find(Settings, Settings.Theme));
         Log.Timing("resources and settings ready");

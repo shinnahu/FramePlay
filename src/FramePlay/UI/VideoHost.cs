@@ -106,10 +106,67 @@ public sealed class VideoHost : HwndHost
         UpdateRegion();
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Holding the picture while the window changes size. When the window goes full screen (or into or out
+    // of picture in picture), Windows shows mpv's last frame stretched to the new size until mpv has
+    // resized its own window and drawn again. Meanwhile the video area is hidden (the black stage behind
+    // it shows), and it comes back once mpv's window has the new size and has had a few frames to draw.
+    // ---------------------------------------------------------------------------------------------
+    private System.Windows.Threading.DispatcherTimer? _holdTimer;
+    private bool _holding;
+    private long _holdSince;
+    private int _holdSettled;
+    private RECT _holdStartSize;
+
+    public void HoldPictureDuringResize()
+    {
+        if (Surface == IntPtr.Zero) return;
+        if (_holdTimer == null)
+        {
+            _holdTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(15) };
+            _holdTimer.Tick += (_, _) => CheckHold();
+        }
+        GetClientRect(Surface, out _holdStartSize);
+        _holding = true;
+        _holdSince = Environment.TickCount64;
+        _holdSettled = 0;
+        UpdateRegion();
+        _holdTimer.Stop();
+        _holdTimer.Start();
+    }
+
+    private void CheckHold()
+    {
+        long elapsed = Environment.TickCount64 - _holdSince;
+        GetClientRect(Surface, out var host);
+        bool hostResized = host.Width != _holdStartSize.Width || host.Height != _holdStartSize.Height;
+        bool childMatches = true;
+        EnumChildWindows(Surface, (h, _) =>
+        {
+            GetClientRect(h, out var c);
+            if (c.Width != host.Width || c.Height != host.Height) childMatches = false;
+            return true;
+        }, IntPtr.Zero);
+        // Once the window has its new size and mpv's window matches it, give mpv ~3 frames to draw.
+        if ((hostResized || elapsed > 150) && childMatches) _holdSettled++;
+        else _holdSettled = 0;
+        if (_holdSettled >= 3 || elapsed > 500)
+        {
+            _holding = false;
+            _holdTimer!.Stop();
+            UpdateRegion();
+        }
+    }
+
     /// <summary>Rounds the corners of the video area (the region also clips mpv's window inside).</summary>
     private void UpdateRegion()
     {
         if (Surface == IntPtr.Zero) return;
+        if (_holding)
+        {
+            SetWindowRgn(Surface, CreateRoundRectRgn(0, 0, 0, 0, 0, 0), true); // nothing shows
+            return;
+        }
         GetClientRect(Surface, out var r);
         double scale = GetDpiForWindow(Surface) / 96.0;
         int rad = (int)Math.Round(_cornerRadius * scale);

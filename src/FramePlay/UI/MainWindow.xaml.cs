@@ -79,6 +79,7 @@ public partial class MainWindow : Window, IPlayerHost
 
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
+        Log.Timing("main window handle created");
         _hwnd = new WindowInteropHelper(this).Handle;
         HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
         ApplyWindowChrome();
@@ -87,9 +88,19 @@ public partial class MainWindow : Window, IPlayerHost
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         Log.Timing("main window loaded");
+        StartPlayback();
+    }
+
+    private bool _playbackStarted;
+
+    private void StartPlayback()
+    {
+        if (_playbackStarted) return;
+        if (Video.Surface == IntPtr.Zero) UpdateLayout();
+        if (Video.Surface == IntPtr.Zero) return; // not built yet: Loaded tries again
+        _playbackStarted = true;
         try
         {
-            if (Video.Surface == IntPtr.Zero) UpdateLayout();
             Player.Initialize(Video.Surface);
             Log.Timing("mpv initialized");
         }

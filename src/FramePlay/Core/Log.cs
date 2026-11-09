@@ -8,12 +8,14 @@ internal static class Log
 
     public static void Info(string msg) => Write(AppPaths.LogFile, "INFO", msg);
 
-    private static readonly DateTime ProcessStart = System.Diagnostics.Process.GetCurrentProcess().StartTime;
+    public static readonly DateTime ProcessStart = System.Diagnostics.Process.GetCurrentProcess().StartTime;
+
+    public static readonly bool TimingEnabled = Environment.GetEnvironmentVariable("FRAMEPLAY_TIMING") == "1";
 
     /// <summary>Startup timing: milliseconds since the process started (logged only with FRAMEPLAY_TIMING=1).</summary>
     public static void Timing(string step)
     {
-        if (Environment.GetEnvironmentVariable("FRAMEPLAY_TIMING") == "1")
+        if (TimingEnabled)
             Write(AppPaths.LogFile, "TIME", $"{(DateTime.Now - ProcessStart).TotalMilliseconds,6:0} ms  {step}");
     }
     public static void Warn(string msg) => Write(AppPaths.LogFile, "WARN", msg);
