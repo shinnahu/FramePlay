@@ -83,10 +83,14 @@ public static class HotkeyCatalog
         new("stop", "playback", "MediaStop"),
         new("next", "playback", "Shift+N, MediaNextTrack"),
         new("previous", "playback", "Shift+P, MediaPreviousTrack"),
-        new("frame_forward", "frames", "Right, Period"),
-        new("frame_back", "frames", "Left, Comma"),
+        new("frame_forward", "frames", "Period"),
+        new("frame_back", "frames", "Comma"),
         new("frames_forward_5", "frames", "Shift+Right"),
         new("frames_back_5", "frames", "Shift+Left"),
+        // YouTube: the arrows jump 5 seconds. With the time shown as timecode or frame numbers they step one
+        // frame instead, like Premiere Pro.
+        new("arrow_forward", "seek", "Right"),
+        new("arrow_back", "seek", "Left"),
         new("seek_forward_5", "seek", "Ctrl+Right"),
         new("seek_back_5", "seek", "Ctrl+Left"),
         new("seek_forward_10", "seek", "L"),
@@ -132,8 +136,12 @@ public sealed class HotkeyMap
     public void Rebuild(IReadOnlyDictionary<string, string> overrides)
     {
         _map.Clear();
-        foreach (var a in HotkeyCatalog.Actions)
-            foreach (var g in Gesture.ParseList(GesturesFor(a.Id, overrides)))
+        // Keys the user chose come first, so they win over a default that uses the same key.
+        foreach (var a in HotkeyCatalog.Actions.Where(a => overrides.ContainsKey(a.Id)))
+            foreach (var g in Gesture.ParseList(overrides[a.Id]))
+                _map.TryAdd(g, a.Id);
+        foreach (var a in HotkeyCatalog.Actions.Where(a => !overrides.ContainsKey(a.Id)))
+            foreach (var g in Gesture.ParseList(a.DefaultGestures))
                 _map.TryAdd(g, a.Id);
     }
 

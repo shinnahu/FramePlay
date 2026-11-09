@@ -20,8 +20,12 @@ public static class TimeFormat
         _ => "time",
     };
 
-    /// <summary>Frame index for a timestamp. A tiny epsilon keeps 0.0333333 at 30 fps on frame 1, not 0.</summary>
-    public static long FrameIndex(double seconds, double fps) => fps > 0 ? (long)Math.Floor(seconds * fps + 1e-3) : 0;
+    /// <summary>
+    /// Frame index for a frame's timestamp, rounded to the nearest frame. Containers store rounded timestamps
+    /// (WebM and MKV in whole milliseconds, so frame 8 of a second at 24 fps sits at .333 s, a hair before
+    /// 8/24 s), and rounding down would name the previous frame.
+    /// </summary>
+    public static long FrameIndex(double seconds, double fps) => fps > 0 ? (long)Math.Floor(seconds * fps + 0.5) : 0;
 
     public static string Format(double seconds, TimeDisplayMode mode, double fps, bool longForm)
     {
@@ -32,8 +36,10 @@ public static class TimeFormat
                 return FrameIndex(seconds, fps).ToString(CultureInfo.InvariantCulture);
             case TimeDisplayMode.Timecode when fps > 0:
             {
-                long whole = (long)Math.Floor(seconds + 1e-6);
-                int frame = (int)Math.Floor((seconds - whole) * fps + 1e-3);
+                // From the (rounded) frame number, so timecode and frame numbers always agree.
+                double frameTime = FrameIndex(seconds, fps) / fps;
+                long whole = (long)Math.Floor(frameTime + 1e-9);
+                int frame = (int)Math.Round((frameTime - whole) * fps);
                 int maxFrame = (int)Math.Ceiling(fps) - 1;
                 if (frame > maxFrame) frame = maxFrame;
                 var ts = TimeSpan.FromSeconds(whole);

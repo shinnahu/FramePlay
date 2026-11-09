@@ -596,6 +596,49 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         Seek(Math.Max(0, Duration - (Fps > 0 ? 1.0 / Fps : 0.05)));
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Jumps (arrow keys, J / L), YouTube style. Holding the key or pressing it again quickly adds the new
+    // jump to where the previous one was heading instead of waiting for it to land, so the jumps add up
+    // fast. While the key repeats, quick keyframe seeks show where it's going; one exact seek follows
+    // once it's let go.
+    // ---------------------------------------------------------------------------------------------
+    private double _jumpTarget = double.NaN, _jumpTotal;
+    private long _jumpAt;
+    private DispatcherTimer? _jumpSettle;
+
+    public void Jump(double seconds)
+    {
+        if (_current == null) return;
+        long now = Environment.TickCount64;
+        bool chained = !double.IsNaN(_jumpTarget) && now - _jumpAt < 600;
+        double from = chained ? _jumpTarget : Position;
+        if (!chained) _jumpTotal = 0;
+        // Never past the last frame, so a jump doesn't end the item and move the queue on.
+        double end = Duration > 0 ? Math.Max(0, Duration - (Fps > 0 ? 1.0 / Fps : 0.05)) : double.MaxValue;
+        double target = Math.Clamp(from + seconds, 0, end);
+        _jumpTotal += target - from;
+        _jumpTarget = target;
+        _jumpAt = now;
+
+        Seek(target, exact: !chained || _isMidi);
+        if (chained && !_isMidi)
+        {
+            if (_jumpSettle == null)
+            {
+                _jumpSettle = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(220) };
+                _jumpSettle.Tick += (_, _) =>
+                {
+                    _jumpSettle!.Stop();
+                    if (_current != null && !double.IsNaN(_jumpTarget)) Seek(_jumpTarget, exact: true);
+                };
+            }
+            _jumpSettle.Stop();
+            _jumpSettle.Start();
+        }
+        string amount = Math.Abs(_jumpTotal).ToString("0.#", CultureInfo.CurrentCulture);
+        Toast?.Invoke((_jumpTotal < 0 ? "−" : "+") + amount + " s");
+    }
+
     public void SeekRelative(double delta)
     {
         if (_current == null) return;

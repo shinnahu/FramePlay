@@ -35,7 +35,13 @@ The installer isn't code-signed, so Windows SmartScreen may warn the first time.
 
 ### Frame-exact, like Premiere Pro
 
-The arrow keys move exactly one frame (Shift+arrows move five). Right-click the time to switch between `h:mm:ss`, timecode (`hh:mm:ss:ff`) and frame numbers. Hover the seek bar to preview any moment.
+Right-click the time to switch between `h:mm:ss`, timecode (`hh:mm:ss:ff`) and frame numbers.
+
+- **With timecode or frame numbers showing:** the arrow keys move exactly one frame, like Premiere Pro. Shift+arrows move five.
+- **With `h:mm:ss`:** the arrow keys jump 5 seconds, like YouTube. Hold one to keep jumping.
+- **Comma and period** always step one frame.
+
+Hover the seek bar to preview any moment.
 
 ![Seek-bar thumbnails, then stepping frame by frame with the timecode display](docs/images/frame-step.gif)
 
@@ -99,10 +105,11 @@ These are the defaults. Change them in **Settings › Hotkeys**: click a shortcu
 | Action | Keys |
 |---|---|
 | Play / pause | Space, K |
-| Next / previous frame | Right / Left, or . / , |
+| Forward / back 5 seconds (hold to keep jumping) | Right / Left |
+| Next / previous frame | . / , (and Right / Left with timecode or frame numbers) |
 | 5 frames forward / back | Shift+Right / Shift+Left |
 | Forward / back 10 seconds | L / J |
-| Forward / back 5 seconds | Ctrl+Right / Ctrl+Left |
+| Forward / back 5 seconds, in any time view | Ctrl+Right / Ctrl+Left |
 | Jump to 10 %…90 % | 1…9 |
 | Start / last frame | Home or 0 / End |
 | Volume up / down, mute | Up / Down, M |

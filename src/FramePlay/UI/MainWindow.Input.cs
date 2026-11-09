@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using FramePlay.Interop;
 using FramePlay.Localization;
+using FramePlay.Playback;
 
 namespace FramePlay.UI;
 
@@ -82,10 +83,12 @@ public partial class MainWindow
             case "frame_back": Player.StepFrames(-1); break;
             case "frames_forward_5": Player.StepFrames(5); break;
             case "frames_back_5": Player.StepFrames(-5); break;
-            case "seek_forward_5": Player.SeekRelative(5); break;
-            case "seek_back_5": Player.SeekRelative(-5); break;
-            case "seek_forward_10": Player.SeekRelative(10); break;
-            case "seek_back_10": Player.SeekRelative(-10); break;
+            case "arrow_forward": ArrowStep(+1); break;
+            case "arrow_back": ArrowStep(-1); break;
+            case "seek_forward_5": Player.Jump(5); break;
+            case "seek_back_5": Player.Jump(-5); break;
+            case "seek_forward_10": Player.Jump(10); break;
+            case "seek_back_10": Player.Jump(-10); break;
             case "go_start": Player.Seek(0); break;
             case "go_end": Player.SeekToEnd(); break;
             case "volume_up": ChangeVolume(5); break;
@@ -129,6 +132,18 @@ public partial class MainWindow
         }
         _overlay?.Poke();
         return true;
+    }
+
+    /// <summary>
+    /// Right / Left: jump 5 seconds like YouTube (holding the key adds the jumps up). With the time shown as
+    /// timecode or frame numbers, step exactly one frame instead, like Premiere Pro.
+    /// </summary>
+    private void ArrowStep(int direction)
+    {
+        bool byFrames = TimeFormat.Parse(_settings.TimeDisplay) != TimeDisplayMode.Time
+                        && Player.HasVideo && !Player.IsMidi && Player.Fps > 0;
+        if (byFrames) Player.StepFrames(direction);
+        else Player.Jump(5 * direction);
     }
 
     /// <summary>Moves the subtitles up (negative) or down (positive) and keeps it as the Settings › Subtitles height.</summary>

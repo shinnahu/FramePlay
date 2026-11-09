@@ -64,8 +64,10 @@ public partial class MainWindow
     {
         _anchoredMenu = menu;
         _anchoredMenuButton = anchor;
+        MenuButton.SetIsMenuOpen(anchor, true);
         menu.Closed += (_, _) =>
         {
+            MenuButton.SetIsMenuOpen(anchor, false);
             if (ReferenceEquals(_anchoredMenu, menu)) { _anchoredMenu = null; _anchoredMenuButton = null; }
             _menuClosedOnButton = CursorOver(anchor) ? anchor : null;
             _menuClosedAt = Environment.TickCount64;
