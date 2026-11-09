@@ -22,10 +22,11 @@ Get `FramePlay-Setup-<version>.exe` from the [latest release](https://github.com
 
 **What Setup asks:**
 - The language for Setup and for FramePlay (English or Español).
-- Whether to install for you only (no admin rights needed) or for all users.
 - Whether to include the 90 MB MIDI soundfont.
 - Whether to create a desktop shortcut.
 - Whether to add FramePlay to "Open with" and Default apps.
+
+Setup installs FramePlay for your Windows account only, so it needs no admin rights. To install it for all users, run Setup with `/ALLUSERS`.
 
 FramePlay needs the free Microsoft .NET 8 Desktop Runtime. If it's missing, Setup offers to download it from Microsoft.
 
