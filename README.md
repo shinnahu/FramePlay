@@ -44,6 +44,7 @@ The arrow keys move exactly one frame (Shift+arrows move five). Right-click the 
 - One click shrinks the player to a small window that stays on top in the corner of the screen.
 - Hover it for controls; drag it anywhere.
 - Resize it from any edge; it keeps the video's shape.
+- When the video ends it stays on the last frame, in the small window.
 - Double-click it, or press Esc, to go back.
 
 ![Switching to picture in picture and back](docs/images/picture-in-picture.gif)
@@ -69,7 +70,7 @@ The arrow keys move exactly one frame (Shift+arrows move five). Right-click the 
 
 ### Themes
 
-It ships with the MarkNotes themes plus a "VLC Redesign" theme. You can create, edit, import and export your own as `.mntheme` files, which MarkNotes opens too.
+It ships with the MarkNotes themes. You can create, edit, import and export your own as `.mntheme` files, which MarkNotes opens too. A theme can also give the seek bar, the volume and the buttons that are on their own colours, as the PS1 theme does with the four PlayStation button colours.
 
 ![FramePlay in six themes: Dark, Light, Dracula, YoRHa, EVA-01 and Neon Arcade](docs/images/themes.png)
 
@@ -121,7 +122,7 @@ These are the defaults. Change them in **Settings › Hotkeys**: click a shortcu
 | Settings | Ctrl+, |
 
 **Mouse:**
-- Click the video to play or pause, double-click for full screen.
+- Double-click the video for full screen.
 - The wheel changes the volume.
 - Right-click opens the menu.
 
@@ -162,7 +163,7 @@ FramePlay is free software under the [GNU GPL v3](LICENSE) or later. [THIRD-PART
 
 - **Playback:** [mpv / libmpv](https://mpv.io), GPL.
 - **MIDI:** [MeltySynth](https://github.com/sinshu/meltysynth) and [NAudio](https://github.com/naudio/NAudio), both MIT.
-- **Design and icons:** adapted from "VLC Redesign" by Juxtopposed (Figma Community), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **Design and icons:** adapted from a media player design by [Juxtopposed](https://www.figma.com/@juxtopposed) (Figma Community), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Themes:** from MarkNotes.
 - **Default soundfont:** "Classic Station" by Yingchun Soul, CC0.
 

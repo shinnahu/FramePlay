@@ -373,13 +373,19 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         Toast?.Invoke(error >= 0 && path != null ? Loc.F("toast.screenshot", Path.GetFileName(path)) : Loc.T("toast.screenshotFailed"));
     }
 
+    /// <summary>
+    /// Keep the last frame on screen when the queue runs out instead of stopping. Picture in picture sets
+    /// it, so the small window stays (paused on the end) rather than the player window coming back.
+    /// </summary>
+    public bool HoldLastFrameAtEnd { get; set; }
+
     /// <summary>End of the current item: pause on the last frame (if enabled for videos) or move on.</summary>
     private void OnEndReached()
     {
         if (_current == null) return;
         var mem = History.GetOrAdd(_current.Path);
         mem.Position = 0; // finished: start from the beginning next time
-        if (HasVideo && Settings.PauseOnLastFrame)
+        if (HasVideo && (Settings.PauseOnLastFrame || (HoldLastFrameAtEnd && !HasNext())))
         {
             if (_isMidi) _midi?.Pause(); else Mpv.SetFlag("pause", true);
             IsPaused = true;

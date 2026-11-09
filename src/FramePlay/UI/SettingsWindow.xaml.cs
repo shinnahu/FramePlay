@@ -517,10 +517,12 @@ public partial class SettingsWindow : Window
         player.Children.Add(video);
         var bar = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
         bar.Children.Add(new Border { Width = 13, Height = 7, CornerRadius = new CornerRadius(2), Background = B("accent") });
-        var track = new Grid { Width = 66, Height = 5, Margin = new Thickness(6, 0, 0, 0) };
+        var track = new Grid { Width = 50, Height = 5, Margin = new Thickness(6, 0, 0, 0) };
         track.Children.Add(new Border { Background = B("bg-input"), CornerRadius = new CornerRadius(2) });
-        track.Children.Add(new Border { Background = B("accent"), Opacity = 0.55, CornerRadius = new CornerRadius(2), Width = 28, HorizontalAlignment = HorizontalAlignment.Left });
+        track.Children.Add(new Border { Background = B("seek"), Opacity = 0.55, CornerRadius = new CornerRadius(2), Width = 22, HorizontalAlignment = HorizontalAlignment.Left });
         bar.Children.Add(track);
+        bar.Children.Add(new Border { Width = 12, Height = 3, Margin = new Thickness(6, 0, 0, 0), Background = B("volume"), CornerRadius = new CornerRadius(1.5) });
+        bar.Children.Add(new Border { Width = 5, Height = 5, Margin = new Thickness(5, 0, 0, 0), Background = B("toggle"), CornerRadius = new CornerRadius(2.5) });
         Grid.SetRow(bar, 2);
         player.Children.Add(bar);
         var queue = new StackPanel { Background = B("bg-0"), Width = 46 };

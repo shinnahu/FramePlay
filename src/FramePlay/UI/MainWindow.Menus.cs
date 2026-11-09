@@ -4,8 +4,10 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using FramePlay.Input;
+using FramePlay.Interop;
 using FramePlay.Localization;
 using FramePlay.Playback;
 
@@ -31,7 +33,9 @@ public partial class MainWindow
     // =============================================================================================
     private void AppMenu_Click(object sender, RoutedEventArgs e)
     {
-        var menu = new ContextMenu { PlacementTarget = (UIElement)sender, Placement = PlacementMode.Bottom, VerticalOffset = 2 };
+        var anchor = (FrameworkElement)sender;
+        if (ClickClosedItsMenu(anchor)) return;
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom, VerticalOffset = 2 };
         menu.Items.Add(Item(Loc.T("menu.open"), OpenFiles, Keys("open_file")));
         menu.Items.Add(Item(Loc.T("menu.openFolder"), OpenFolder, Keys("open_folder")));
         menu.Items.Add(new Separator());
@@ -43,7 +47,56 @@ public partial class MainWindow
         menu.Items.Add(Item(Loc.T("menu.about"), () => ShowSettings("about")));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item(Loc.T("menu.exit"), Close, "Alt+F4"));
+        OpenMenu(menu, anchor);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Menu buttons work as toggles: clicking the button again closes its menu. The click that closes a
+    // menu also reaches the button underneath, which would open the menu again, so that click is
+    // remembered and skipped.
+    // ---------------------------------------------------------------------------------------------
+    private ContextMenu? _anchoredMenu;            // the open (or closing) button menu
+    private FrameworkElement? _anchoredMenuButton;
+    private FrameworkElement? _menuClosedOnButton; // the button the mouse was on when its menu closed
+    private long _menuClosedAt;
+
+    private void OpenMenu(ContextMenu menu, FrameworkElement anchor)
+    {
+        _anchoredMenu = menu;
+        _anchoredMenuButton = anchor;
+        menu.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_anchoredMenu, menu)) { _anchoredMenu = null; _anchoredMenuButton = null; }
+            _menuClosedOnButton = CursorOver(anchor) ? anchor : null;
+            _menuClosedAt = Environment.TickCount64;
+        };
         menu.IsOpen = true;
+    }
+
+    /// <summary>True when this click on the button is the one that closed (or is closing) its menu.</summary>
+    private bool ClickClosedItsMenu(FrameworkElement anchor)
+    {
+        // The click arrived before the menu finished closing.
+        if (ReferenceEquals(_anchoredMenuButton, anchor))
+        {
+            if (_anchoredMenu is { IsOpen: true } open) open.IsOpen = false;
+            _anchoredMenu = null;
+            _anchoredMenuButton = null;
+            return true;
+        }
+        // The menu closed first, because of this click on its button.
+        bool closedIt = ReferenceEquals(_menuClosedOnButton, anchor) && Environment.TickCount64 - _menuClosedAt < 600;
+        _menuClosedOnButton = null;
+        return closedIt;
+    }
+
+    private static bool CursorOver(FrameworkElement el)
+    {
+        if (!el.IsVisible || PresentationSource.FromVisual(el) == null) return false;
+        Win32.GetCursorPos(out var p);
+        var topLeft = el.PointToScreen(new Point(0, 0));
+        var bottomRight = el.PointToScreen(new Point(el.ActualWidth, el.ActualHeight));
+        return p.X >= topLeft.X && p.X < bottomRight.X && p.Y >= topLeft.Y && p.Y < bottomRight.Y;
     }
 
     // =============================================================================================
@@ -109,26 +162,29 @@ public partial class MainWindow
 
     public void ShowAudioMenu(FrameworkElement anchor)
     {
+        if (ClickClosedItsMenu(anchor)) return;
         var menu = MenuAbove(anchor);
         menu.Items.Add(Header(Loc.T("tracks.audio")));
         FillAudioItems(menu.Items);
-        menu.IsOpen = true;
+        OpenMenu(menu, anchor);
     }
 
     public void ShowSubtitlesMenu(FrameworkElement anchor)
     {
+        if (ClickClosedItsMenu(anchor)) return;
         var menu = MenuAbove(anchor);
         menu.Items.Add(Header(Loc.T("tracks.subtitles")));
         FillSubtitleItems(menu.Items);
-        menu.IsOpen = true;
+        OpenMenu(menu, anchor);
     }
 
     public void ShowSpeedMenu(FrameworkElement anchor)
     {
+        if (ClickClosedItsMenu(anchor)) return;
         var menu = MenuAbove(anchor);
         menu.Items.Add(Header(Loc.T("ctx.speed")));
         FillSpeedItems(menu.Items);
-        menu.IsOpen = true;
+        OpenMenu(menu, anchor);
     }
 
     private static MenuItem Header(string text) => new()

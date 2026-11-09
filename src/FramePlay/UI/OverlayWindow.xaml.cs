@@ -45,6 +45,7 @@ public partial class OverlayWindow : Window
             _hwnd = new WindowInteropHelper(this).Handle;
             int ex = Win32.GetWindowLong(_hwnd, Win32.GWL_EXSTYLE);
             Win32.SetWindowLong(_hwnd, Win32.GWL_EXSTYLE, ex | Win32.WS_EX_NOACTIVATE | Win32.WS_EX_TOOLWINDOW);
+            HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
         };
         MouseMove += (_, _) => Poke();
         // Create the native window now (hidden) so it can be positioned before it is first shown.
@@ -161,6 +162,28 @@ public partial class OverlayWindow : Window
 
     /// <summary>Strip height (device-independent pixels) the fullscreen controls need at the bottom of the screen.</summary>
     public const double FullscreenStripHeight = 140;
+
+    /// <summary>Width (DIP) of the picture-in-picture edge that resizes the window, as on the player window itself.</summary>
+    private const double PipResizeEdge = 7;
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        // The dark layer covers the whole small window, but its outer edge is left to the player window
+        // underneath (same UI thread), so dragging an edge still resizes picture in picture.
+        if (msg == Win32.WM_NCHITTEST && Mode == OverlayMode.Pip)
+        {
+            long lp = lParam.ToInt64();
+            int x = (short)(lp & 0xFFFF), y = (short)((lp >> 16) & 0xFFFF);
+            Win32.GetWindowRect(hwnd, out var r);
+            int edge = (int)Math.Round(PipResizeEdge * Win32.GetDpiForWindow(hwnd) / 96.0);
+            if (x - r.Left < edge || r.Right - x <= edge || y - r.Top < edge || r.Bottom - y <= edge)
+            {
+                handled = true;
+                return (IntPtr)Win32.HTTRANSPARENT;
+            }
+        }
+        return IntPtr.Zero;
+    }
 
     /// <summary>True while the controls are showing (or fading in).</summary>
     public bool IsShowingControls => _shown;

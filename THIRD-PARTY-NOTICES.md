@@ -35,7 +35,7 @@ It includes or is based on the following works.
 - https://musical-artifacts.com/artifacts/2282
 - CC0 1.0 (public domain dedication).
 
-## "VLC Redesign" by Juxtopposed
+## Media player design by Juxtopposed
 
 - FramePlay's interface layout and icons are adapted from this Figma Community design.
 - https://www.figma.com/@juxtopposed

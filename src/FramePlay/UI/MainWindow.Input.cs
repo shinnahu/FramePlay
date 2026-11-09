@@ -10,13 +10,11 @@ namespace FramePlay.UI;
 public partial class MainWindow
 {
     private static readonly double[] Speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 4.0];
-    private DateTime _lastVideoClickToggle = DateTime.MinValue;
     private string _lastSubtitleId = "auto";
 
     private void WireVideoInput()
     {
         Video.LeftButtonDown += OnVideoLeftDown;
-        Video.LeftButtonUp += OnVideoLeftUp;
         Video.LeftDoubleClick += OnVideoDoubleClick;
         Video.RightButtonUp += _ => ShowVideoMenu();
         Video.Wheel += delta => ChangeVolume(delta > 0 ? 5 : -5);
@@ -25,30 +23,23 @@ public partial class MainWindow
 
     private bool _pipDragMoved;
 
+    /// <summary>
+    /// Clicking the video never plays or pauses (double-click is for full screen). In full screen a click
+    /// brings the controls back; in picture in picture, dragging the video moves the window.
+    /// </summary>
     private void OnVideoLeftDown(Point p)
     {
-        _clickActivated = (DateTime.UtcNow - _activatedAt).TotalMilliseconds < 250;
-        if (!_pip) return;
-        // Picture in picture: drag anywhere on the video to move the window.
+        if (!_pip)
+        {
+            _overlay?.Poke();
+            return;
+        }
         Win32.GetCursorPos(out var before);
         Win32.ReleaseCapture();
         Win32.SendMessage(_hwnd, Win32.WM_NCLBUTTONDOWN, (IntPtr)Win32.HTCAPTION, IntPtr.Zero);
         Win32.GetCursorPos(out var after);
         _pipDragMoved = Math.Abs(after.X - before.X) > 3 || Math.Abs(after.Y - before.Y) > 3;
         _overlay?.Poke();
-    }
-
-    private DateTime _activatedAt = DateTime.MinValue;
-    private bool _clickActivated;
-
-    private void OnVideoLeftUp(Point p)
-    {
-        if (_pip) return;
-        // A click that only brought FramePlay to the front shouldn't pause the video.
-        if (_clickActivated) { _clickActivated = false; return; }
-        // YouTube style: a click pauses or plays.
-        Player.PlayPause();
-        _lastVideoClickToggle = DateTime.UtcNow;
     }
 
     private void OnVideoDoubleClick(Point p)
@@ -59,8 +50,6 @@ public partial class MainWindow
             return;
         }
         ToggleFullscreen();
-        // The first click of the double-click already toggled playback; undo that.
-        if ((DateTime.UtcNow - _lastVideoClickToggle).TotalMilliseconds < Win32.GetDoubleClickTime() + 100) Player.PlayPause();
     }
 
     private void OnVideoMouseActivity() => _overlay?.Poke();

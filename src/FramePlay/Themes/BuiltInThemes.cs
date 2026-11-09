@@ -1,11 +1,18 @@
 namespace FramePlay.Themes;
 
 /// <summary>
-/// The themes from MarkNotes (src/web/src/themes.js, version 2.5.1), with every token resolved, plus a
-/// "VLC Redesign" theme with the colours of Juxtopposed's design.
+/// The themes from MarkNotes (src/web/src/themes.js, version 2.5.1), with every token resolved.
+/// Themes can also colour the seek bar, the volume and buttons that are on ("seek", "volume", "toggle");
+/// without them those use the accent.
 /// </summary>
 public static class BuiltInThemes
 {
+    private static Dictionary<string, string> With(Dictionary<string, string> vars, params (string Key, string Value)[] extra)
+    {
+        foreach (var (k, v) in extra) vars[k] = v;
+        return vars;
+    }
+
     private static Dictionary<string, string> V(string bg0, string bg1, string bg2, string bg3, string bgInput, string bgHover,
         string bgActive, string bgModal, string border, string text, string textMuted, string textStrong, string accent,
         string accentText, string link, string danger, string success, string warning, string selection, string radius) => new()
@@ -46,14 +53,14 @@ public static class BuiltInThemes
         T("ps2", "PS2 System", "dark",
             V("#000004", "#030719", "#050b24", "#08102e", "#02051a", "#0c1a45", "#12286a", "#061032", "#16306e", "#c9d8ff", "#6f86c4", "#ffffff",
               "#4f9dff", "#000814", "#8fc2ff", "#f23f43", "#23a55a", "#f0b232", "rgba(79,157,255,0.3)", "8px")),
-        T("ps1", "PS1 Memory Card", "dark",
+        // The four PlayStation button colours: cross blue (play button, accent), triangle green (seek bar,
+        // switches), circle red (volume), square pink (buttons that are on, volume above 100 %).
+        T("ps1", "PS1 Memory Card", "dark", With(
             V("#1a1a1a", "#2a2a2e", "#34343a", "#3c3c44", "#222226", "#45454f", "#55556a", "#2e2e34", "#5a5a66", "#e6e6e6", "#a0a0aa", "#ffffff",
-              "#7CB2E8", "#0e1a28", "#7CB2E8", "#FF6666", "#40E2A0", "#FF6666", "rgba(124,178,232,0.32)", "2px")),
+              "#7CB2E8", "#0e1a28", "#7CB2E8", "#FF6666", "#40E2A0", "#FF69F8", "rgba(124,178,232,0.32)", "8px"),
+            ("seek", "#40E2A0"), ("volume", "#FF6666"), ("toggle", "#FF69F8"))),
         T("dracula", "Dracula", "dark",
             V("#191a21", "#21222c", "#282a36", "#2d2f3d", "#1e1f29", "#343746", "#44475a", "#282a36", "#44475a", "#f8f8f2", "#9ea8d0", "#ffffff",
               "#bd93f9", "#1b1c24", "#8be9fd", "#ff5555", "#50fa7b", "#ffb86c", "rgba(189,147,249,0.3)", "8px")),
-        T("vlc-redesign", "VLC Redesign", "dark",
-            V("#0e0e0e", "#191919", "#1b1b1b", "#222222", "#000000", "#262626", "#303030", "#1b1b1b", "#2a2a2a", "#cfcfcf", "#8f8f8f", "#eaeaea",
-              "#d37918", "#161616", "#fc9729", "#c42b1c", "#3ba55c", "#fc9729", "rgba(211,121,24,0.3)", "6px"), "FramePlay"),
     };
 }

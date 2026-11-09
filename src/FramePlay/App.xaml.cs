@@ -56,6 +56,7 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, ex) => { Log.Error("Task", ex.Exception); ex.SetObserved(); };
 
         Log.Timing("OnStartup");
+        HoverTip.Install();
         IconFactory.Register(Resources);
         Settings = AppSettings.Load();
         if (Settings.ApplyInstallerLanguage()) Settings.Save();

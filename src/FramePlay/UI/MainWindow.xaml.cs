@@ -70,7 +70,7 @@ public partial class MainWindow : Window, IPlayerHost
             PositionOverlay();
             if (_overlay?.IsShowingControls == true) UpdateSubtitleLift(animate: false);
         };
-        Activated += (_, _) => { _activatedAt = DateTime.UtcNow; PositionOverlay(); };
+        Activated += (_, _) => PositionOverlay();
         PreviewKeyDown += OnPreviewKeyDown;
         Drop += OnDrop;
         DragOver += OnDragOver;

@@ -139,6 +139,7 @@ public partial class MainWindow
         Left = left; Top = top; Width = w; Height = h;
         UpdateTopmost();
         Player.SetPipSubtitleScale(true);
+        Player.HoldLastFrameAtEnd = true;
         ShowOverlay(OverlayMode.Pip);
     }
 
@@ -148,6 +149,7 @@ public partial class MainWindow
         _settings.Pip = new WindowBounds { Left = Left, Top = Top, Width = Width, Height = Height };
         _pip = false;
         Player.SetPipSubtitleScale(false);
+        Player.HoldLastFrameAtEnd = false;
         Video.EdgeResizeZone = 0;
         SetChromeless(false);
         RestoreNormalBounds();

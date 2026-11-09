@@ -11,8 +11,12 @@ public static class ThemeManager
     public static readonly string[] Tokens =
     [
         "bg-0", "bg-1", "bg-2", "bg-3", "bg-input", "bg-hover", "bg-active", "bg-modal", "border",
-        "text", "text-muted", "text-strong", "accent", "accent-text", "link", "danger", "success", "warning", "selection", "radius",
+        "text", "text-muted", "text-strong", "accent", "accent-text", "seek", "volume", "toggle",
+        "link", "danger", "success", "warning", "selection", "radius",
     ];
+
+    /// <summary>FramePlay's own colour roles; a theme without them (every MarkNotes theme) uses its accent.</summary>
+    private static readonly string[] AccentRoles = ["seek", "volume", "toggle"];
 
     public static ThemeDefinition Current { get; private set; } = BuiltInThemes.All[0];
     public static bool IsDark { get; private set; } = true;
@@ -30,6 +34,8 @@ public static class ThemeManager
         var d = new Dictionary<string, string>(t.Base == "light" ? BuiltInThemes.LightBase : BuiltInThemes.DarkBase);
         foreach (var kv in t.Vars)
             if (!string.IsNullOrWhiteSpace(kv.Value)) d[kv.Key] = kv.Value;
+        foreach (var role in AccentRoles)
+            if (!d.TryGetValue(role, out var value) || string.IsNullOrWhiteSpace(value)) d[role] = d["accent"];
         return d;
     }
 
@@ -43,7 +49,7 @@ public static class ThemeManager
     {
         var v = Resolve(t);
         var fallback = t.Base == "light" ? BuiltInThemes.LightBase : BuiltInThemes.DarkBase;
-        Color C(string k) => ColorUtil.Parse(v.GetValueOrDefault(k), ColorUtil.Parse(fallback[k], Colors.Magenta));
+        Color C(string k) => ColorUtil.Parse(v.GetValueOrDefault(k), ColorUtil.Parse(fallback.GetValueOrDefault(k, fallback["accent"]), Colors.Magenta));
         var res = Application.Current.Resources;
 
         void Set(string key, Color c)
@@ -76,6 +82,11 @@ public static class ThemeManager
         Set("Success", C("success"));
         Set("Warning", C("warning"));
         Set("Selection", C("selection"));
+        Color seek = C("seek");
+        Set("Seek", seek);
+        Set("SeekDim", ColorUtil.Over(ColorUtil.WithAlpha(seek, 0.38), bgInput));
+        Set("Volume", C("volume"));
+        Set("Toggle", C("toggle"));
 
         // Derived shades (the same recipes MarkNotes uses in app.css).
         Set("HoverTint", ColorUtil.WithAlpha(text, 0.07));

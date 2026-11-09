@@ -26,8 +26,8 @@
                    ToolTip="{l:Tr tip.time}" MouseLeftButtonUp="Time_LeftClick" MouseRightButtonUp="Time_RightClick" Text="0:00"/>
 
         <c:SeekBar x:Name="Seek" Grid.Column="2" Height="34" Margin="12,0" VerticalAlignment="Center"
-                   TrackBrush="{DynamicResource BgInputBrush}" FillBrush="{DynamicResource AccentDimBrush}"
-                   ThumbBrush="{DynamicResource AccentBrush}" HoverBrush="{DynamicResource TextStrongBrush}"
+                   TrackBrush="{DynamicResource BgInputBrush}" FillBrush="{DynamicResource SeekDimBrush}"
+                   ThumbBrush="{DynamicResource SeekBrush}" HoverBrush="{DynamicResource TextStrongBrush}"
                    CornerRadius="{DynamicResource Radius}"/>
 
         <TextBlock x:Name="DurationText" Grid.Column="3" MinWidth="56" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular"
@@ -36,7 +36,7 @@
         <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="14,0,4,0" VerticalAlignment="Center">
             <Button x:Name="MuteButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.VolumeFill}" ToolTip="{l:Tr tip.mute}" Click="Mute_Click"/>
             <c:VolumeSlider x:Name="VolumeControl" Width="104" Height="28" Margin="0,0,0,0" VerticalAlignment="Center"
-                            TrackBrush="{DynamicResource BgActiveBrush}" FillBrush="{DynamicResource AccentBrush}"
+                            TrackBrush="{DynamicResource BgActiveBrush}" FillBrush="{DynamicResource VolumeBrush}"
                             BoostBrush="{DynamicResource WarningBrush}" KnobBrush="{DynamicResource TextStrongBrush}"/>
         </StackPanel>
 

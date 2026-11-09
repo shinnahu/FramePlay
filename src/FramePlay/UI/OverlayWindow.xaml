@@ -24,12 +24,13 @@
         </Grid>
 
         <!-- ============================================================ Picture in picture -->
-        <Grid x:Name="PipLayout" Visibility="Collapsed" Margin="7">
+        <!-- The dark layer covers the whole window; its outer edge still resizes the window (see WndProc). -->
+        <Grid x:Name="PipLayout" Visibility="Collapsed">
             <Border x:Name="PipScrim" Background="#5A000000" MouseLeftButtonDown="PipScrim_MouseLeftButtonDown"/>
             <Button x:Name="PipBack" Style="{StaticResource IconButton}" Content="{StaticResource Icon.OpenFill}" Foreground="White"
-                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4" ToolTip="{l:Tr tip.backToPlayer}" Click="PipBack_Click"/>
+                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="11" ToolTip="{l:Tr tip.backToPlayer}" Click="PipBack_Click"/>
             <Button x:Name="PipClose" Style="{StaticResource IconButton}" Content="{StaticResource Icon.CloseBold}" Foreground="White"
-                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" ToolTip="{l:Tr tip.close}" Click="PipClose_Click"/>
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="11" ToolTip="{l:Tr tip.close}" Click="PipClose_Click"/>
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
                 <Button Style="{StaticResource IconButton}" Content="{StaticResource Icon.PrevFill}" Foreground="White" Width="40" Height="40" Padding="8"
                         ToolTip="{l:Tr tip.prev}" Click="PipPrev_Click"/>
@@ -38,10 +39,10 @@
                 <Button Style="{StaticResource IconButton}" Content="{StaticResource Icon.NextFill}" Foreground="White" Width="40" Height="40" Padding="8"
                         ToolTip="{l:Tr tip.next}" Click="PipNext_Click"/>
             </StackPanel>
-            <Grid x:Name="PipBottom" VerticalAlignment="Bottom" Margin="10,0,10,4">
+            <Grid x:Name="PipBottom" VerticalAlignment="Bottom" Margin="17,0,17,11">
                 <TextBlock x:Name="PipTime" Foreground="White" FontSize="11" Margin="2,0,0,12" Typography.NumeralAlignment="Tabular"/>
                 <c:SeekBar x:Name="PipSeek" Thin="True" Height="12" VerticalAlignment="Bottom"
-                           TrackBrush="#40FFFFFF" FillBrush="{DynamicResource AccentBrush}" ThumbBrush="{DynamicResource AccentBrush}"/>
+                           TrackBrush="#40FFFFFF" FillBrush="{DynamicResource SeekBrush}" ThumbBrush="{DynamicResource SeekBrush}"/>
             </Grid>
         </Grid>
     </Grid>
