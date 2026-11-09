@@ -1,0 +1,200 @@
+<Window x:Class="FramePlay.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:FramePlay.UI"
+        xmlns:c="clr-namespace:FramePlay.UI.Controls"
+        xmlns:l="clr-namespace:FramePlay.Localization"
+        Title="FramePlay" Width="1100" Height="700" MinWidth="760" MinHeight="420"
+        Background="{DynamicResource Bg1Brush}" Foreground="{DynamicResource TextBrush}"
+        FontFamily="{StaticResource UiFont}" FontSize="13"
+        UseLayoutRounding="True" SnapsToDevicePixels="True" AllowDrop="True"
+        Icon="/Assets/FramePlay.ico">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome x:Name="Chrome" CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="Root">
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="TopRow" Height="40"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition x:Name="BarRow" Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================================================================ Top bar -->
+        <Grid x:Name="TopBar" Grid.Row="0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0,0,0"
+                        WindowChrome.IsHitTestVisibleInChrome="True">
+                <Button x:Name="AppMenuButton" Width="34" Height="32" Focusable="False" ToolTip="{l:Tr tip.menu}" Click="AppMenu_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" Background="Transparent" CornerRadius="{DynamicResource CornerRadiusSmall}">
+                                <Image Source="/Assets/FramePlay-256.png" Width="20" Height="20" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource HoverTintBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <Button x:Name="MoreButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.More}" Margin="2,0,0,0"
+                        ToolTip="{l:Tr tip.menu}" Click="AppMenu_Click"/>
+                <Border Width="1" Height="18" Background="{DynamicResource LineBrush}" Margin="8,0"/>
+                <Button x:Name="OpenButton" Style="{StaticResource GhostButton}" Padding="6,4" Click="OpenFile_Click" Focusable="False">
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="20" Height="20">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="{StaticResource Icon.FolderFill}" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="{l:Tr tip.open}" Margin="7,0,2,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <TextBlock x:Name="TitleText" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="260,0"
+                       Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" Text="FramePlay"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
+                <Button x:Name="MinButton" Style="{StaticResource WindowButton}" Content="{StaticResource Icon.Minimize}" ToolTip="{l:Tr tip.minimize}" Click="Minimize_Click"/>
+                <Button x:Name="MaxButton" Style="{StaticResource WindowButton}" Content="{StaticResource Icon.Maximize}" ToolTip="{l:Tr tip.maximize}" Click="Maximize_Click"/>
+                <Button x:Name="CloseButton" Style="{StaticResource CloseWindowButton}" Content="{StaticResource Icon.Close}" ToolTip="{l:Tr tip.close}" Click="Close_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ================================================================ Stage + queue -->
+        <Grid x:Name="Middle" Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition x:Name="QueueColumn" Width="0"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid x:Name="Stage" Margin="10,0,10,0">
+                <Border x:Name="StageBackground" Background="Black" CornerRadius="9"/>
+
+                <ui:VideoHost x:Name="Video" Visibility="Collapsed"/>
+
+                <!-- Audio files: cover art, title and artist -->
+                <Grid x:Name="AudioView" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="0.35*"/>
+                    </Grid.RowDefinitions>
+                    <Border x:Name="CoverFrame" Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,30,0,0"
+                            CornerRadius="{DynamicResource CornerRadiusLarge}" ClipToBounds="True" MaxWidth="420" MaxHeight="420">
+                        <Grid>
+                            <Border x:Name="CoverPlaceholder" Width="240" Height="240" Background="{DynamicResource Bg1Brush}" CornerRadius="{DynamicResource CornerRadiusLarge}">
+                                <Viewbox Width="96" Height="96">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Data="{StaticResource Icon.NoteFill}" Fill="{DynamicResource TextMutedBrush}"/>
+                                    </Canvas>
+                                </Viewbox>
+                            </Border>
+                            <Image x:Name="CoverImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="AudioTitle" Grid.Row="1" HorizontalAlignment="Center" Margin="24,22,24,0" FontSize="22" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextStrongBrush}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="AudioSubtitle" Grid.Row="2" HorizontalAlignment="Center" Margin="24,6,24,0" FontSize="14"
+                               Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                </Grid>
+
+                <!-- Nothing playing -->
+                <Grid x:Name="IdleView">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Image Source="/Assets/FramePlay-256.png" Width="84" Height="84" RenderOptions.BitmapScalingMode="HighQuality" Opacity="0.95"/>
+                        <TextBlock Text="{l:Tr idle.title}" HorizontalAlignment="Center" Margin="0,22,0,0" FontSize="17" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextStrongBrush}"/>
+                        <TextBlock Text="{l:Tr idle.hint}" HorizontalAlignment="Center" Margin="0,6,0,0" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <Button Style="{StaticResource AccentButton}" Content="{l:Tr idle.open}" HorizontalAlignment="Center" Margin="0,18,0,0"
+                                Padding="18,8" Click="OpenFile_Click"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Status messages when no video is showing (over video, mpv draws them) -->
+                <Border x:Name="ToastPanel" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16" Padding="12,7" Visibility="Collapsed"
+                        Background="{DynamicResource Bg0Brush}" CornerRadius="{DynamicResource CornerRadiusSmall}" IsHitTestVisible="False">
+                    <TextBlock x:Name="ToastText" Foreground="{DynamicResource TextStrongBrush}"/>
+                </Border>
+            </Grid>
+
+            <!-- Queue panel -->
+            <Border x:Name="QueuePanel" Grid.Column="1" Background="{DynamicResource Bg0Brush}" CornerRadius="9" Margin="0,0,10,0" Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Margin="14,10,8,4">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Viewbox Width="18" Height="18">
+                                <Canvas Width="24" Height="24">
+                                    <Path Data="{StaticResource Icon.QueueFill}" Fill="{DynamicResource AccentBrush}"/>
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock Text="{l:Tr queue.title}" Margin="8,0,0,0" FontWeight="SemiBold" Foreground="{DynamicResource TextStrongBrush}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="QueueCount" Margin="10,0,0,0" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ToggleButton x:Name="QueueRandom" Style="{StaticResource IconToggle}" Content="{StaticResource Icon.ShuffleFill}" ToolTip="{l:Tr tip.random}"
+                                          Click="Random_Click"/>
+                            <Button Style="{StaticResource IconButton}" Content="{StaticResource Icon.SortFill}" ToolTip="{l:Tr queue.sortName}" Click="QueueSort_Click"/>
+                            <Button Style="{StaticResource IconButton}" Content="{StaticResource Icon.MinusFill}" ToolTip="{l:Tr queue.clear}" Click="QueueClear_Click"/>
+                            <Button Style="{StaticResource IconButton}" Content="{StaticResource Icon.PlusFill}" ToolTip="{l:Tr queue.add}" Click="QueueAdd_Click"/>
+                        </StackPanel>
+                    </Grid>
+                    <Border Grid.Row="1" Height="1" Background="{DynamicResource LineBrush}" Margin="12,4,12,4" Opacity="0.7"/>
+                    <Grid Grid.Row="2">
+                        <ListBox x:Name="QueueList" Margin="6,0,6,8" SelectionMode="Extended" AllowDrop="True"
+                                 MouseDoubleClick="QueueList_DoubleClick" KeyDown="QueueList_KeyDown"
+                                 PreviewMouseLeftButtonDown="QueueList_PreviewMouseLeftButtonDown" PreviewMouseMove="QueueList_PreviewMouseMove"
+                                 Drop="QueueList_Drop" DragOver="QueueList_DragOver">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="18"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Viewbox Width="12" Height="12" HorizontalAlignment="Left" x:Name="playing" Visibility="Hidden">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Data="{StaticResource Icon.PlayFill}" Fill="{DynamicResource AccentBrush}"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                        <TextBlock x:Name="title" Grid.Column="1" Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding DurationText}" Margin="10,0,4,0" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                            <Setter TargetName="playing" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="title" Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{l:Tr queue.play}" Click="QueueMenuPlay_Click"/>
+                                    <MenuItem Header="{l:Tr queue.showInFolder}" Click="QueueMenuShow_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="{l:Tr queue.remove}" InputGestureText="Del" Click="QueueMenuRemove_Click"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
+                        <TextBlock x:Name="QueueEmpty" Text="{l:Tr queue.empty}" TextWrapping="Wrap" TextAlignment="Center" Margin="24,30,24,0"
+                                   VerticalAlignment="Top" Foreground="{DynamicResource TextMutedBrush}" IsHitTestVisible="False"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ================================================================ Control bar -->
+        <ui:ControlBar x:Name="Bar" Grid.Row="2"/>
+    </Grid>
+</Window>

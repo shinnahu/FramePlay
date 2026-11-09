@@ -1,0 +1,13 @@
+bin/
+obj/
+dist/
+.vs/
+*.user
+
+# Inno Setup, fetched by installer\build-installer.ps1 when it isn't installed
+tools/innosetup/
+
+# Large binaries, fetched separately (see README › Build)
+third_party/libmpv/*.dll
+third_party/libmpv/*.dll.a
+assets/soundfonts/*.sf2

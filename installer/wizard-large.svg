@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="164" height="314" viewBox="0 0 164 314">
+  <!-- Left-hand image of the Setup wizard (Welcome and Finish pages). Exported to PNG at 1x and 2x. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="164" y2="314" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7983ff"/>
+      <stop offset="0.55" stop-color="#5865f2"/>
+      <stop offset="1" stop-color="#8b3ffc"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="82" cy="116" r="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="164" height="314" fill="url(#bg)"/>
+  <rect width="164" height="314" fill="url(#glow)"/>
+  <!-- App glyph: frame corners and the play triangle, centred at (82, 116). -->
+  <g transform="translate(82 116) scale(0.62) translate(-128 -128)">
+    <g fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M58 94 V66 H86"/>
+      <path d="M170 66 H198 V94"/>
+      <path d="M198 162 V190 H170"/>
+      <path d="M86 190 H58 V162"/>
+    </g>
+    <path d="M106 88 C106 79.5 115.2 74.5 122.3 79.3 L170.8 113.6 C177.7 118.4 177.7 128.6 170.8 133.4 L122.3 167.7 C115.2 172.5 106 167.5 106 159 Z"
+          fill="#ffffff" transform="translate(4 4.5)"/>
+  </g>
+  <!-- Only the name: the same image serves the English and Spanish installers. -->
+  <text x="82" y="218" text-anchor="middle" font-family="Segoe UI Semibold, Segoe UI, sans-serif" font-weight="600" font-size="21" fill="#ffffff">FramePlay</text>
+</svg>

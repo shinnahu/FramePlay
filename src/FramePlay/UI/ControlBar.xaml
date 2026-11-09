@@ -1,0 +1,53 @@
+<UserControl x:Class="FramePlay.UI.ControlBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:FramePlay.UI.Controls"
+             xmlns:l="clr-namespace:FramePlay.Localization"
+             Height="56">
+    <Grid x:Name="BarRoot" Background="{DynamicResource Bg1Brush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="12,0,4,0" VerticalAlignment="Center">
+            <Button x:Name="PrevButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.PrevFill}" ToolTip="{l:Tr tip.prev}" Click="Prev_Click"/>
+            <Button x:Name="PlayButton" Style="{StaticResource PlayButton}" Content="{StaticResource Icon.PlayFill}" Margin="4,0" ToolTip="{l:Tr tip.play}" Click="Play_Click"/>
+            <Button x:Name="NextButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.NextFill}" ToolTip="{l:Tr tip.next}" Click="Next_Click"/>
+            <Button x:Name="StopButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.StopFill}" ToolTip="{l:Tr tip.stop}" Click="Stop_Click"/>
+        </StackPanel>
+
+        <TextBlock x:Name="TimeText" Grid.Column="1" MinWidth="64" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right"
+                   Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource TextBrush}" Background="Transparent"
+                   ToolTip="{l:Tr tip.time}" MouseLeftButtonUp="Time_LeftClick" MouseRightButtonUp="Time_RightClick" Text="0:00"/>
+
+        <c:SeekBar x:Name="Seek" Grid.Column="2" Height="34" Margin="12,0" VerticalAlignment="Center"
+                   TrackBrush="{DynamicResource BgInputBrush}" FillBrush="{DynamicResource AccentDimBrush}"
+                   ThumbBrush="{DynamicResource AccentBrush}" HoverBrush="{DynamicResource TextStrongBrush}"
+                   CornerRadius="{DynamicResource Radius}"/>
+
+        <TextBlock x:Name="DurationText" Grid.Column="3" MinWidth="56" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular"
+                   Foreground="{DynamicResource TextMutedBrush}" Background="Transparent" MouseRightButtonUp="Time_RightClick" Text="0:00"/>
+
+        <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="14,0,4,0" VerticalAlignment="Center">
+            <Button x:Name="MuteButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.VolumeFill}" ToolTip="{l:Tr tip.mute}" Click="Mute_Click"/>
+            <c:VolumeSlider x:Name="VolumeControl" Width="104" Height="28" Margin="0,0,0,0" VerticalAlignment="Center"
+                            TrackBrush="{DynamicResource BgActiveBrush}" FillBrush="{DynamicResource AccentBrush}"
+                            BoostBrush="{DynamicResource WarningBrush}" KnobBrush="{DynamicResource TextStrongBrush}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="10,0,10,0" VerticalAlignment="Center">
+            <ToggleButton x:Name="RandomButton" Style="{StaticResource IconToggle}" Content="{StaticResource Icon.ShuffleFill}" ToolTip="{l:Tr tip.random}" Click="Random_Click"/>
+            <Button x:Name="AudioButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.AudioFill}" ToolTip="{l:Tr tip.audio}" Click="Audio_Click"/>
+            <Button x:Name="SubtitlesButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.SubtitlesFill}" ToolTip="{l:Tr tip.subtitles}" Click="Subtitles_Click"/>
+            <Button x:Name="SpeedButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.SpeedFill}" ToolTip="{l:Tr tip.speed}" Click="Speed_Click"/>
+            <ToggleButton x:Name="QueueButton" Style="{StaticResource IconToggle}" Content="{StaticResource Icon.QueueFill}" ToolTip="{l:Tr tip.queue}" Click="Queue_Click"/>
+            <Button x:Name="PipButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.PipFill}" ToolTip="{l:Tr tip.pip}" Click="Pip_Click"/>
+            <Button x:Name="FullscreenButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.FullscreenFill}" ToolTip="{l:Tr tip.fullscreen}" Click="Fullscreen_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,48 @@
+<Window x:Class="FramePlay.UI.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:FramePlay.UI"
+        xmlns:c="clr-namespace:FramePlay.UI.Controls"
+        xmlns:l="clr-namespace:FramePlay.Localization"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False" ShowActivated="False"
+        ResizeMode="NoResize" Focusable="False" UseLayoutRounding="True"
+        FontFamily="{StaticResource UiFont}" FontSize="13" Foreground="{DynamicResource TextBrush}">
+    <Grid x:Name="Root" Opacity="0" IsHitTestVisible="False">
+
+        <!-- ============================================================ Fullscreen -->
+        <!-- The window covers only this bottom strip, so Windows never redraws a full-screen layered surface. -->
+        <Grid x:Name="FullscreenLayout" Visibility="Collapsed">
+            <Border x:Name="FsPanel" VerticalAlignment="Bottom" Margin="28,0,28,22" MaxWidth="1600" Padding="6,0,6,2"
+                    Background="{DynamicResource OverlayBrush}" CornerRadius="{DynamicResource CornerRadiusLarge}"
+                    BorderBrush="{DynamicResource MenuLineBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock x:Name="FsTitle" Margin="14,10,14,0" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextStrongBrush}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <ui:ControlBar x:Name="Bar"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================ Picture in picture -->
+        <Grid x:Name="PipLayout" Visibility="Collapsed" Margin="7">
+            <Border x:Name="PipScrim" Background="#5A000000" MouseLeftButtonDown="PipScrim_MouseLeftButtonDown"/>
+            <Button x:Name="PipBack" Style="{StaticResource IconButton}" Content="{StaticResource Icon.OpenFill}" Foreground="White"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4" ToolTip="{l:Tr tip.backToPlayer}" Click="PipBack_Click"/>
+            <Button x:Name="PipClose" Style="{StaticResource IconButton}" Content="{StaticResource Icon.CloseBold}" Foreground="White"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" ToolTip="{l:Tr tip.close}" Click="PipClose_Click"/>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
+                <Button Style="{StaticResource IconButton}" Content="{StaticResource Icon.PrevFill}" Foreground="White" Width="40" Height="40" Padding="8"
+                        ToolTip="{l:Tr tip.prev}" Click="PipPrev_Click"/>
+                <Button x:Name="PipPlay" Style="{StaticResource IconButton}" Content="{StaticResource Icon.PlayFill}" Foreground="White"
+                        Width="56" Height="56" Padding="10" Margin="10,0" Click="PipPlay_Click"/>
+                <Button Style="{StaticResource IconButton}" Content="{StaticResource Icon.NextFill}" Foreground="White" Width="40" Height="40" Padding="8"
+                        ToolTip="{l:Tr tip.next}" Click="PipNext_Click"/>
+            </StackPanel>
+            <Grid x:Name="PipBottom" VerticalAlignment="Bottom" Margin="10,0,10,4">
+                <TextBlock x:Name="PipTime" Foreground="White" FontSize="11" Margin="2,0,0,12" Typography.NumeralAlignment="Tabular"/>
+                <c:SeekBar x:Name="PipSeek" Thin="True" Height="12" VerticalAlignment="Bottom"
+                           TrackBrush="#40FFFFFF" FillBrush="{DynamicResource AccentBrush}" ThumbBrush="{DynamicResource AccentBrush}"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
