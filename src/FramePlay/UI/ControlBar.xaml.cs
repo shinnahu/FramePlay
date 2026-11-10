@@ -35,8 +35,13 @@ public partial class ControlBar : UserControl
     public ControlBar()
     {
         InitializeComponent();
-        Loc.I.Changed += () => UpdatePlayIcon();
+        Loc.I.Changed += () => { UpdatePlayIcon(); UpdateLoop(); };
+        // In a narrow window the volume slider gives its room to the seek bar; the mute button,
+        // Up/Down and the mouse wheel over the video still set the volume.
+        SizeChanged += (_, e) => VolumeControl.Visibility = e.NewSize.Width < NarrowWidth ? Visibility.Collapsed : Visibility.Visible;
     }
+
+    private const double NarrowWidth = 900;
 
     public void Attach(IPlayerHost host)
     {
@@ -60,6 +65,7 @@ public partial class ControlBar : UserControl
         Seek.Maximum = _player.Duration;
         Seek.Value = _player.Position;
         RandomButton.IsChecked = _player.Shuffle;
+        UpdateLoop();
         QueueButton.IsChecked = _host?.IsQueueOpen ?? false;
         SetFullscreenState(_host?.IsFullscreen ?? false);
         UpdatePlayIcon();
@@ -96,6 +102,9 @@ public partial class ControlBar : UserControl
             case nameof(PlayerController.Shuffle):
                 RandomButton.IsChecked = _player.Shuffle;
                 break;
+            case nameof(PlayerController.Loop):
+                UpdateLoop();
+                break;
             case nameof(PlayerController.HasVideo):
             case nameof(PlayerController.IsMidi):
             case nameof(PlayerController.Current):
@@ -110,6 +119,16 @@ public partial class ControlBar : UserControl
         bool playing = _player.IsPlaying;
         PlayButton.Content = FindResource(playing ? "Icon.PauseFill" : "Icon.PlayFill");
         PlayButton.ToolTip = Loc.T(playing ? "tip.pause" : "tip.play");
+    }
+
+    /// <summary>Lit for loop all and loop one; loop one shows a 1 inside the arrows.</summary>
+    private void UpdateLoop()
+    {
+        if (_player == null) return;
+        var loop = _player.Loop;
+        LoopButton.IsChecked = loop != LoopMode.Off;
+        LoopButton.Content = FindResource(loop == LoopMode.One ? "Icon.RepeatOneFill" : "Icon.RepeatFill");
+        LoopButton.ToolTip = Loc.T(LoopModes.Key(loop));
     }
 
     private void UpdateVolume()
@@ -166,6 +185,8 @@ public partial class ControlBar : UserControl
     private void Stop_Click(object sender, RoutedEventArgs e) => _player?.Stop();
     private void Mute_Click(object sender, RoutedEventArgs e) { if (_player != null) _player.SetMuted(!_player.Muted); }
     private void Random_Click(object sender, RoutedEventArgs e) { if (_player != null) _player.Shuffle = RandomButton.IsChecked == true; }
+    // The toggle flips IsChecked on its own; CycleLoop's change sets it back to match the mode.
+    private void Loop_Click(object sender, RoutedEventArgs e) { _player?.CycleLoop(); UpdateLoop(); }
     private void Audio_Click(object sender, RoutedEventArgs e) => _host?.ShowAudioMenu(AudioButton);
     private void Subtitles_Click(object sender, RoutedEventArgs e) => _host?.ShowSubtitlesMenu(SubtitlesButton);
     private void Speed_Click(object sender, RoutedEventArgs e) => _host?.ShowSpeedMenu(SpeedButton);

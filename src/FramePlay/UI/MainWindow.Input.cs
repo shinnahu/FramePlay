@@ -110,6 +110,7 @@ public partial class MainWindow
             case "on_top": ToggleManualTopmost(); break;
             case "queue": ToggleQueue(); break;
             case "random": Player.Shuffle = !Player.Shuffle; break;
+            case "loop": Player.CycleLoop(); break;
             case "subtitles_toggle": ToggleSubtitles(); break;
             case "sub_delay_minus": Player.AdjustSubtitleDelay(-0.05); break;
             case "sub_delay_plus": Player.AdjustSubtitleDelay(0.05); break;

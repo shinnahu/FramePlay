@@ -109,6 +109,7 @@ public static class HotkeyCatalog
         new("on_top", "view", "Ctrl+T"),
         new("queue", "view", "Ctrl+L"),
         new("random", "playback", "Shift+R"),
+        new("loop", "playback", "Shift+L"),
         new("subtitles_toggle", "subtitles", "C"),
         new("sub_delay_minus", "subtitles", "Z"),
         new("sub_delay_plus", "subtitles", "X"),

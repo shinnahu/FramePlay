@@ -30,6 +30,8 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
     private bool _restoring;
     private string? _pendingScreenshot;
     private bool _handledEof;
+    /// <summary>Items that failed to open one after another, so a queue of unplayable files doesn't loop forever.</summary>
+    private int _failedInARow;
 
     public AppSettings Settings { get; }
     public History History { get; }
@@ -55,6 +57,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         _volume = settings.Volume;
         _muted = settings.Muted;
         _shuffle = settings.Shuffle;
+        _loop = LoopModes.Parse(settings.Loop);
 
         _midiClock = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromMilliseconds(100) };
         _midiClock.Tick += (_, _) => { if (_midi != null) Position = _midi.Position; };
@@ -122,6 +125,29 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
     private bool _shuffle;
     public bool Shuffle { get => _shuffle; set { if (Set(ref _shuffle, value)) { Settings.Shuffle = value; _shuffleHistory.Clear(); } } }
 
+    private LoopMode _loop;
+    /// <summary>
+    /// No loop, loop the queue, or loop the current item. Looping one item is mpv's loop-file, so videos
+    /// and songs restart without a gap; MIDI files restart from <see cref="OnEndReached"/>.
+    /// </summary>
+    public LoopMode Loop
+    {
+        get => _loop;
+        set
+        {
+            if (!Set(ref _loop, value)) return;
+            Settings.Loop = LoopModes.ToSetting(value);
+            Mpv.SetString("loop-file", value == LoopMode.One ? "inf" : "no");
+        }
+    }
+
+    /// <summary>The loop button: no loop → loop all → loop one → no loop.</summary>
+    public void CycleLoop()
+    {
+        Loop = LoopModes.Next(Loop);
+        Toast?.Invoke(Loc.T(LoopModes.Key(Loop)));
+    }
+
     private bool _eof;
     public bool EndReached { get => _eof; private set => Set(ref _eof, value); }
 
@@ -148,6 +174,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
             ("config", "no"), ("load-scripts", "no"), ("ytdl", "no"), ("osc", "no"), ("terminal", "no"),
             ("input-default-bindings", "no"), ("input-vo-keyboard", "no"), ("input-cursor", "no"), ("cursor-autohide", "no"),
             ("idle", "yes"), ("keep-open", "yes"), ("force-window", "no"), ("audio-display", "no"),
+            ("loop-file", _loop == LoopMode.One ? "inf" : "no"),
             ("vo", "gpu-next"), ("gpu-api", "d3d11"), ("hwdec", "auto-safe"),
             // Compiled shaders are cached, so only the very first start pays for compiling them.
             ("gpu-shader-cache", "yes"), ("gpu-shader-cache-dir", Path.Combine(AppPaths.LocalDir, "cache", "shaders")),
@@ -283,6 +310,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
             Log.Info($"First file loaded {since.TotalMilliseconds:0} ms after the process started");
         }
         if (_current == null) return;
+        _failedInARow = 0;
         _fileReady = false;
         _restoring = true;
         _handledEof = false;
@@ -366,11 +394,20 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         {
             Toast?.Invoke(Loc.F("toast.cantPlay", _current.FileName));
             Log.Warn($"mpv could not play {_current.Path}: {LibMpv.ErrorString(error)}");
-            var failed = _current;
-            if (HasNext()) Next(auto: true);
-            else { Current = null; MediaChanged?.Invoke(); }
-            _ = failed;
+            if (!SkipFailedItem()) { Current = null; MediaChanged?.Invoke(); }
         }
+    }
+
+    /// <summary>
+    /// After an item fails to open: moves on to the next one, unless every item in a row has failed (a
+    /// looping or shuffled queue would otherwise try them forever). False when playback should stop.
+    /// </summary>
+    private bool SkipFailedItem()
+    {
+        _failedInARow++;
+        if (HasNext() && _failedInARow < Queue.Count) { Next(auto: true); return true; }
+        _failedInARow = 0;
+        return false;
     }
 
     private void OnCommandReply(ulong id, int error)
@@ -387,12 +424,20 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
     /// </summary>
     public bool HoldLastFrameAtEnd { get; set; }
 
-    /// <summary>End of the current item: pause on the last frame (if enabled for videos) or move on.</summary>
+    /// <summary>
+    /// End of the current item: play it again (loop one), pause on the last frame (if enabled for videos)
+    /// or move on, back to the start of the queue when looping all.
+    /// </summary>
     private void OnEndReached()
     {
         if (_current == null) return;
         var mem = History.GetOrAdd(_current.Path);
         mem.Position = 0; // finished: start from the beginning next time
+        if (Loop == LoopMode.One)
+        {
+            Restart();
+            return;
+        }
         if (HasVideo && (Settings.PauseOnLastFrame || (HoldLastFrameAtEnd && !HasNext())))
         {
             if (_isMidi) _midi?.Pause(); else Mpv.SetFlag("pause", true);
@@ -401,6 +446,27 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         }
         if (HasNext()) Next(auto: true);
         else Stop();
+    }
+
+    /// <summary>Plays the current item again from the start.</summary>
+    private void Restart()
+    {
+        if (_current == null) return;
+        CancelStepping();
+        _handledEof = false;
+        EndReached = false;
+        Position = 0;
+        if (_isMidi)
+        {
+            if (_midi == null) return;
+            _midi.Seek(0);
+            _midi.Play();
+            IsPaused = _midi.IsPaused;
+            return;
+        }
+        Mpv.Command("seek", "0", "absolute+exact");
+        Mpv.SetFlag("pause", false);
+        IsPaused = false;
     }
 
     // =============================================================================================
@@ -430,8 +496,10 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         if (playNow || _current == null) PlayIndex(first);
     }
 
-    public bool HasNext() => Shuffle ? Queue.Count > 1 || (Queue.Count == 1 && _current == null) : CurrentIndex + 1 < Queue.Count;
-    public bool HasPrevious() => Shuffle ? _shuffleHistory.Count > 0 : CurrentIndex > 0;
+    /// <summary>Whether Next has somewhere to go: the following item, a random one, or the start again when looping all.</summary>
+    public bool HasNext() => Queue.Count > 0 &&
+        (Loop == LoopMode.All || (Shuffle ? Queue.Count > 1 || _current == null : CurrentIndex + 1 < Queue.Count));
+    public bool HasPrevious() => Shuffle ? _shuffleHistory.Count > 0 : CurrentIndex > 0 || (Loop == LoopMode.All && Queue.Count > 1);
 
     public void PlayIndex(int index)
     {
@@ -484,12 +552,24 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
                 _shuffleHistory.Clear();
                 candidates = Queue.Where(q => q != _current).ToList();
             }
-            if (candidates.Count == 0) { if (!auto) Seek(0); return; }
+            if (candidates.Count == 0)
+            {
+                // Only the current item is in the queue: looping all plays it again.
+                if (Loop == LoopMode.All) Restart();
+                else if (!auto) Seek(0);
+                return;
+            }
             Play(candidates[_rng.Next(candidates.Count)]);
             return;
         }
         int i = CurrentIndex;
         if (i + 1 < Queue.Count) PlayIndex(i + 1);
+        else if (Loop == LoopMode.All)
+        {
+            // Past the end: back to the first item. A queue of one plays it again without reloading it.
+            if (Queue.Count == 1 && _current == Queue[0]) Restart();
+            else PlayIndex(0);
+        }
     }
 
     public void Previous()
@@ -506,6 +586,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
         }
         int i = CurrentIndex;
         if (i > 0) PlayIndex(i - 1);
+        else if (Loop == LoopMode.All && Queue.Count > 1) PlayIndex(Queue.Count - 1); // first item: round to the last
         else Seek(0);
     }
 
@@ -1047,6 +1128,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
             Duration = _midi.Duration;
             item.Duration = _midi.Duration;
             Position = start;
+            _failedInARow = 0;
             if (_midi.Title != null) { Title = _midi.Title; item.Title = _midi.Title; }
             Tracks = new();
             TracksChanged?.Invoke();
@@ -1062,7 +1144,7 @@ public sealed class PlayerController : INotifyPropertyChanged, IDisposable
             Log.Error("MIDI " + item.Path, ex);
             Toast?.Invoke(Loc.F("toast.cantPlay", item.FileName));
             IsMidi = false;
-            if (HasNext()) Next(auto: true);
+            SkipFailedItem();
         }
     }
 

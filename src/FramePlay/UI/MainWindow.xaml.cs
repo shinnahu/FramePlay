@@ -46,6 +46,7 @@ public partial class MainWindow : Window, IPlayerHost
         QueueList.ItemsSource = Player.Queue;
         Player.Queue.CollectionChanged += (_, _) => UpdateQueueInfo();
         UpdateQueueInfo();
+        QueueRandom.IsChecked = Player.Shuffle;
 
         Bar.Attach(this);
         ControlBar.TimeModeChanged += mode => { Bar.SetTimeMode(mode); _overlay?.Bar.SetTimeMode(mode); SaveSettingsSoon(); };
@@ -202,6 +203,9 @@ public partial class MainWindow : Window, IPlayerHost
                 break;
             case nameof(PlayerController.IsPaused):
                 UpdateTopmost();
+                break;
+            case nameof(PlayerController.Shuffle):
+                QueueRandom.IsChecked = Player.Shuffle;
                 break;
         }
     }

@@ -5,8 +5,9 @@ using System.Windows.Media;
 namespace FramePlay.UI.Controls;
 
 /// <summary>
-/// The thick seek bar from the redesign: a dark track, the played part filled with a dim accent and an
-/// accent handle. Click seeks exactly; dragging scrubs (fast keyframe seeks), releasing lands exactly.
+/// The seek bar: a thin rounded line with the played part in the accent colour, as thin as the volume track.
+/// Under the mouse it thickens, a round handle (in <see cref="HoverBrush"/>) appears and <see cref="FillBrush"/>
+/// lights the stretch up to the pointer. Click seeks exactly; dragging scrubs (fast keyframe seeks), releasing lands exactly.
 /// </summary>
 public sealed class SeekBar : FrameworkElement
 {
@@ -22,8 +23,6 @@ public sealed class SeekBar : FrameworkElement
         new FrameworkPropertyMetadata(Brushes.Orange, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty HoverBrushProperty = DependencyProperty.Register(nameof(HoverBrush), typeof(Brush), typeof(SeekBar),
         new FrameworkPropertyMetadata(Brushes.White, FrameworkPropertyMetadataOptions.AffectsRender));
-    public static readonly DependencyProperty CornerRadiusProperty = DependencyProperty.Register(nameof(CornerRadius), typeof(double), typeof(SeekBar),
-        new FrameworkPropertyMetadata(6.0, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty ThinProperty = DependencyProperty.Register(nameof(Thin), typeof(bool), typeof(SeekBar),
         new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
 
@@ -33,7 +32,6 @@ public sealed class SeekBar : FrameworkElement
     public Brush FillBrush { get => (Brush)GetValue(FillBrushProperty); set => SetValue(FillBrushProperty, value); }
     public Brush ThumbBrush { get => (Brush)GetValue(ThumbBrushProperty); set => SetValue(ThumbBrushProperty, value); }
     public Brush HoverBrush { get => (Brush)GetValue(HoverBrushProperty); set => SetValue(HoverBrushProperty, value); }
-    public double CornerRadius { get => (double)GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }
     /// <summary>Thin variant for the picture-in-picture window.</summary>
     public bool Thin { get => (bool)GetValue(ThinProperty); set => SetValue(ThinProperty, value); }
 
@@ -80,30 +78,26 @@ public sealed class SeekBar : FrameworkElement
             return;
         }
 
-        // The track sits a few pixels inside the control so the handle can stand out above and below it.
-        const double inset = 4;
-        double th = h - inset * 2;
-        double cr = Math.Min(CornerRadius, th / 2);
-        var track = new Rect(0, inset, w, th);
-        dc.DrawRoundedRectangle(TrackBrush, null, track, cr, cr);
+        // A thin rounded track across the middle; the whole height of the control still takes clicks.
+        // Under the mouse the track thickens, the handle grows, and the stretch up to the pointer lights up.
+        bool active = _hoverX >= 0 || _dragging;
+        double th = active ? TrackActive : TrackIdle, tr = th / 2, cy = h / 2;
+        var track = new Rect(0, cy - tr, w, th);
+        dc.DrawRoundedRectangle(TrackBrush, null, track, tr, tr);
         double fx = w * frac;
-        if (fx > 0)
-        {
-            dc.PushClip(new RectangleGeometry(track, cr, cr));
-            dc.DrawRectangle(FillBrush, null, new Rect(0, inset, fx, th));
-            dc.Pop();
-        }
-        if (_hoverX >= 0 && !_dragging)
-        {
-            var hb = HoverBrush.Clone();
-            hb.Opacity = 0.35;
-            dc.DrawRectangle(hb, null, new Rect(Math.Clamp(_hoverX, 0, w - 1), inset + 3, 1, th - 6));
-        }
-        // Handle: a pill taller than the track (it covers the full height and pokes out a little).
-        const double tw = 7;
-        double tx = Math.Clamp(fx - tw / 2, 0, w - tw);
-        dc.DrawRoundedRectangle(ThumbBrush, null, new Rect(tx, 0, tw, h), tw / 2, tw / 2);
+        dc.PushClip(new RectangleGeometry(track, tr, tr));
+        if (_hoverX > fx && !_dragging) dc.DrawRectangle(FillBrush, null, new Rect(fx, cy - tr, Math.Min(_hoverX, w) - fx, th));
+        if (fx > 0) dc.DrawRectangle(ThumbBrush, null, new Rect(0, cy - tr, fx, th));
+        dc.Pop();
+        if (!active) return; // at rest just the line, like the volume track; the handle shows under the mouse
+        const double k = Knob / 2;
+        dc.DrawEllipse(KnobShadow, null, new Point(fx, cy + 1), k + 0.5, k + 0.5);
+        dc.DrawEllipse(HoverBrush, null, new Point(fx, cy), k, k);
     }
+
+    private const double TrackIdle = 4, TrackActive = 6, Knob = 14;
+    private static readonly Brush KnobShadow = Frozen(new SolidColorBrush(Color.FromArgb(70, 0, 0, 0)));
+    private static Brush Frozen(Brush b) { b.Freeze(); return b; }
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {

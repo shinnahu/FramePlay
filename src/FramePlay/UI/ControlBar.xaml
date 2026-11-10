@@ -25,10 +25,9 @@
                    Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource TextBrush}" Background="Transparent"
                    ToolTip="{l:Tr tip.time}" MouseLeftButtonUp="Time_LeftClick" MouseRightButtonUp="Time_RightClick" Text="0:00"/>
 
-        <c:SeekBar x:Name="Seek" Grid.Column="2" Height="34" Margin="12,0" VerticalAlignment="Center"
-                   TrackBrush="{DynamicResource BgInputBrush}" FillBrush="{DynamicResource SeekDimBrush}"
-                   ThumbBrush="{DynamicResource SeekBrush}" HoverBrush="{DynamicResource TextStrongBrush}"
-                   CornerRadius="{DynamicResource Radius}"/>
+        <c:SeekBar x:Name="Seek" Grid.Column="2" Height="30" Margin="12,0" VerticalAlignment="Center"
+                   TrackBrush="{DynamicResource BgActiveBrush}" FillBrush="{DynamicResource SeekDimBrush}"
+                   ThumbBrush="{DynamicResource SeekBrush}" HoverBrush="{DynamicResource TextStrongBrush}"/>
 
         <TextBlock x:Name="DurationText" Grid.Column="3" MinWidth="56" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular"
                    Foreground="{DynamicResource TextMutedBrush}" Background="Transparent" MouseRightButtonUp="Time_RightClick" Text="0:00"/>
@@ -42,6 +41,7 @@
 
         <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="10,0,10,0" VerticalAlignment="Center">
             <ToggleButton x:Name="RandomButton" Style="{StaticResource IconToggle}" Content="{StaticResource Icon.ShuffleFill}" ToolTip="{l:Tr tip.random}" Click="Random_Click"/>
+            <ToggleButton x:Name="LoopButton" Style="{StaticResource IconToggle}" Content="{StaticResource Icon.RepeatFill}" ToolTip="{l:Tr tip.loopOff}" Click="Loop_Click"/>
             <Button x:Name="AudioButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.AudioFill}" ToolTip="{l:Tr tip.audio}" Click="Audio_Click"/>
             <Button x:Name="SubtitlesButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.SubtitlesFill}" ToolTip="{l:Tr tip.subtitles}" Click="Subtitles_Click"/>
             <Button x:Name="SpeedButton" Style="{StaticResource IconButton}" Content="{StaticResource Icon.SpeedFill}" ToolTip="{l:Tr tip.speed}" Click="Speed_Click"/>

@@ -54,6 +54,8 @@ public sealed class AppSettings
     public double Volume { get; set; } = 100;
     public bool Muted { get; set; }
     public bool Shuffle { get; set; }
+    /// <summary>"off", "all" (loop the queue) or "one" (loop the current item).</summary>
+    public string Loop { get; set; } = "off";
     public bool QueueOpen { get; set; }
     /// <summary>"time", "timecode" or "frames".</summary>
     public string TimeDisplay { get; set; } = "time";

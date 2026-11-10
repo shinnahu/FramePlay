@@ -19,6 +19,11 @@ public static class IconFactory
         Add(res, "Icon.ShuffleFill",
             "M21.6,7 L18.1,4.3 L18.1,9.7 Z M21.6,17 L18.1,14.3 L18.1,19.7 Z",
             "M3,7 L6.5,7 C9.5,7 10.5,8.5 12,12 C13.5,15.5 14.5,17 17.5,17 L18.5,17 M3,17 L6.5,17 C8,17 9,16.4 10,15.2 M14,8.8 C15,7.5 16,7 17.5,7 L18.5,7");
+        // Loop: two arrows chasing round a rounded box; loop one adds a 1 inside.
+        const string loopHeads = "M21.4,6.5 L17.9,3.8 L17.9,9.2 Z M2.6,17.5 L6.1,14.8 L6.1,20.2 Z";
+        const string loopLines = "M4,12 L4,9.5 Q4,6.5 7,6.5 L18.5,6.5 M20,12 L20,14.5 Q20,17.5 17,17.5 L5.5,17.5";
+        Add(res, "Icon.RepeatFill", loopHeads, loopLines);
+        Add(res, "Icon.RepeatOneFill", loopHeads, loopLines, extraStrokes: "M10.9,10.3 L12.5,9.3 L12.5,14.7", extraWidth: 1.7);
         Add(res, "Icon.AudioFill", null, "M4,10 L4,14 M8,7 L8,17 M12,4.5 L12,19.5 M16,8 L16,16 M20,10 L20,14", 2.4);
         Add(res, "Icon.QueueFill",
             "M3.5,7 A1.6,1.6 0 1 0 6.7,7 A1.6,1.6 0 1 0 3.5,7 Z M3.5,12 A1.6,1.6 0 1 0 6.7,12 A1.6,1.6 0 1 0 3.5,12 Z M3.5,17 A1.6,1.6 0 1 0 6.7,17 A1.6,1.6 0 1 0 3.5,17 Z",
@@ -50,19 +55,24 @@ public static class IconFactory
             "M8.25,7.5 L9.75,7.5 L9.75,17.5 L8.25,17.5 Z M18.25,5 L19.75,5 L19.75,15.5 L18.25,15.5 Z M8.25,6.1 L19.75,3.5 L19.75,5.9 L8.25,8.5 Z");
     }
 
-    private static void Add(ResourceDictionary res, string key, string? fill, string? strokes, double width = 2.0)
+    private static void Add(ResourceDictionary res, string key, string? fill, string? strokes, double width = 2.0,
+                            string? extraStrokes = null, double extraWidth = 2.0)
     {
         var group = new GeometryGroup { FillRule = FillRule.Nonzero };
         if (fill != null) group.Children.Add(Geometry.Parse(fill));
-        if (strokes != null)
-        {
-            var pen = new Pen(Brushes.Black, width) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
-            var widened = Geometry.Parse(strokes).GetWidenedPathGeometry(pen);
-            widened.FillRule = FillRule.Nonzero;
-            group.Children.Add(widened);
-        }
+        if (strokes != null) group.Children.Add(Widen(strokes, width));
+        if (extraStrokes != null) group.Children.Add(Widen(extraStrokes, extraWidth));
         group.Freeze();
         res[key] = group;
+    }
+
+    /// <summary>Centre lines drawn with a round-capped pen, as fill geometry.</summary>
+    private static Geometry Widen(string strokes, double width)
+    {
+        var pen = new Pen(Brushes.Black, width) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
+        var widened = Geometry.Parse(strokes).GetWidenedPathGeometry(pen);
+        widened.FillRule = FillRule.Nonzero;
+        return widened;
     }
 
     /// <summary>A solid 8-tooth gear with a round hole.</summary>

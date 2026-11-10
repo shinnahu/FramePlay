@@ -93,6 +93,7 @@ It ships with the MarkNotes themes. You can create, edit, import and export your
 
 - **Screenshots:** lossless PNG at the video's full resolution, from the right-click menu or Ctrl+Shift+E.
 - **Queue:** random order, drag to reorder, drop files or whole folders.
+- **Loop:** one button cycles between no loop, looping the whole queue and looping the current item.
 - **Per-file memory:** remembers the position, tracks and delays of every file.
 - **Single instance:** files opened from File Explorer play in the window that's already open. This is on by default; see **Settings › General**.
 - **Always on top:** while a video plays, or any time with Ctrl+T.
@@ -124,6 +125,7 @@ These are the defaults. Change them in **Settings › Hotkeys**: click a shortcu
 | Screenshot | Ctrl+Shift+E or F12 |
 | Next / previous in queue | Shift+N / Shift+P |
 | Random | Shift+R |
+| Loop: off / all / one | Shift+L |
 | Queue panel | Ctrl+L |
 | Always on top | Ctrl+T |
 | Open file / folder | Ctrl+O / Ctrl+Shift+O |

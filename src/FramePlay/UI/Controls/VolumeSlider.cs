@@ -8,9 +8,9 @@ using System.Windows.Media.Effects;
 namespace FramePlay.UI.Controls;
 
 /// <summary>
-/// A modern volume slider: a thin rounded track, an accent fill and a
-/// round knob that grows on hover, with a percentage bubble while dragging. 0 to 200 %; the part above
-/// 100 % (amplification) is drawn in the theme's warning colour, with a small mark at 100 %.
+/// A modern volume slider, styled like the seek bar: a thin rounded track with an accent fill that thickens
+/// under the mouse, where a round knob appears, and a percentage bubble while dragging. 0 to 200 %; the part above
+/// 100 % (amplification) is drawn in the theme's warning colour, and dragging snaps to 100 %.
 /// </summary>
 public sealed class VolumeSlider : FrameworkElement
 {
@@ -39,7 +39,8 @@ public sealed class VolumeSlider : FrameworkElement
 
     public event Action<double>? ValueRequested;
 
-    private const double TrackHeight = 4, KnobSize = 12, KnobHover = 15, Pad = 8;
+    // The same sizes as the seek bar, so the two match.
+    private const double TrackIdle = 4, TrackActive = 6, Knob = 14, Pad = 8;
     private bool _dragging, _hover;
     private readonly Popup _bubble;
     private readonly TextBlock _bubbleText;
@@ -71,27 +72,30 @@ public sealed class VolumeSlider : FrameworkElement
         double w = ActualWidth, h = ActualHeight;
         if (w <= 0 || h <= 0) return;
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, w, h)); // whole area is clickable
-        double cy = h / 2, r = TrackHeight / 2;
-        var track = new Rect(TrackLeft, cy - r, TrackWidth, TrackHeight);
+        // Same as the seek bar: just the line at rest; thicker, with the knob, under the mouse.
+        bool active = _hover || _dragging;
+        double th = active ? TrackActive : TrackIdle;
+        double cy = h / 2, r = th / 2;
+        var track = new Rect(TrackLeft, cy - r, TrackWidth, th);
         dc.DrawRoundedRectangle(TrackBrush, null, track, r, r);
 
         double x = XFor(Value), x100 = XFor(100);
         double opacity = Muted ? 0.35 : 1;
         if (opacity < 1) dc.PushOpacity(opacity);
         dc.PushClip(new RectangleGeometry(track, r, r));
-        dc.DrawRectangle(FillBrush, null, new Rect(TrackLeft, cy - r, Math.Max(0, Math.Min(x, x100) - TrackLeft), TrackHeight));
-        if (x > x100) dc.DrawRectangle(BoostBrush, null, new Rect(x100, cy - r, x - x100, TrackHeight));
+        dc.DrawRectangle(FillBrush, null, new Rect(TrackLeft, cy - r, Math.Max(0, Math.Min(x, x100) - TrackLeft), th));
+        if (x > x100) dc.DrawRectangle(BoostBrush, null, new Rect(x100, cy - r, x - x100, th));
         dc.Pop();
         if (opacity < 1) dc.Pop();
 
-        // Small mark at 100 % (normal loudness).
-        dc.DrawEllipse(KnobBrush, null, new Point(x100, cy), 1.4, 1.4);
-
-        double k = (_hover || _dragging ? KnobHover : KnobSize) / 2;
-        var shadow = new SolidColorBrush(Color.FromArgb(70, 0, 0, 0));
-        dc.DrawEllipse(shadow, null, new Point(x, cy + 1), k + 0.5, k + 0.5);
+        if (!active) return;
+        const double k = Knob / 2;
+        dc.DrawEllipse(KnobShadow, null, new Point(x, cy + 1), k + 0.5, k + 0.5);
         dc.DrawEllipse(KnobBrush, null, new Point(x, cy), k, k);
     }
+
+    private static readonly Brush KnobShadow = Frozen(new SolidColorBrush(Color.FromArgb(70, 0, 0, 0)));
+    private static Brush Frozen(Brush b) { b.Freeze(); return b; }
 
     private void SetFrom(Point p)
     {
