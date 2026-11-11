@@ -141,6 +141,10 @@ public sealed partial class Loc
         ["app.deleteConfirm"] = "Delete the theme \"{0}\"?",
         ["app.imported"] = "Imported {0} theme(s).",
         ["app.importFailed"] = "\"{0}\" isn't a theme file.",
+        ["app.accent"] = "Accent color",
+        ["app.accent.desc"] = "Replaces the theme's accent in every theme: the play button, the seek and volume bars and buttons that are on. The first circle keeps the theme's own color; the last one picks any color.",
+        ["app.accent.theme"] = "The theme's color ({0})",
+        ["app.accent.custom"] = "Any color…",
 
         ["editor.title"] = "Theme editor",
         ["editor.name"] = "Name",
@@ -328,6 +332,10 @@ public sealed partial class Loc
         ["app.deleteConfirm"] = "¿Eliminar el tema \"{0}\"?",
         ["app.imported"] = "Se importaron {0} tema(s).",
         ["app.importFailed"] = "\"{0}\" no es un archivo de tema.",
+        ["app.accent"] = "Color de acento",
+        ["app.accent.desc"] = "Reemplaza el acento en todos los temas: el botón de reproducir, las barras de progreso y de volumen y los botones activados. El primer círculo deja el color del tema; el último elige cualquier color.",
+        ["app.accent.theme"] = "El color del tema ({0})",
+        ["app.accent.custom"] = "Cualquier color…",
 
         ["editor.title"] = "Editor de temas",
         ["editor.name"] = "Nombre",

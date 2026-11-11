@@ -40,7 +40,7 @@ public sealed class ThemeEditorWindow : Window
         Content = Build();
         Closed += (_, _) => { if (!_saved) ThemeManager.Apply(_revertTo); };
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && Keyboard.FocusedElement is not TextBox) Close(); };
-        ThemeManager.Apply(_theme);
+        ThemeManager.Apply(_theme, withAccent: false);
     }
 
     private Brush Res(string key) => (Brush)FindResource(key);
@@ -104,10 +104,10 @@ public sealed class ThemeEditorWindow : Window
         baseCombo.Items.Add(new ComboBoxItem { Content = Loc.T("editor.dark"), Tag = "dark" });
         baseCombo.Items.Add(new ComboBoxItem { Content = Loc.T("editor.light"), Tag = "light" });
         baseCombo.SelectedIndex = _theme.Base == "light" ? 1 : 0;
-        baseCombo.SelectionChanged += (_, _) => { _theme.Base = (string)((ComboBoxItem)baseCombo.SelectedItem).Tag; ThemeManager.Apply(_theme); };
+        baseCombo.SelectionChanged += (_, _) => { _theme.Base = (string)((ComboBoxItem)baseCombo.SelectedItem).Tag; ThemeManager.Apply(_theme, withAccent: false); };
         MetaRow(Loc.T("editor.base"), baseCombo);
         var radius = new Slider { Minimum = 0, Maximum = 16, Value = ThemeManager.RadiusOf(ThemeManager.Resolve(_theme)), IsSnapToTickEnabled = true, TickFrequency = 1, Width = 200, HorizontalAlignment = HorizontalAlignment.Left };
-        radius.ValueChanged += (_, e) => { _theme.Vars["radius"] = ((int)e.NewValue).ToString(CultureInfo.InvariantCulture) + "px"; ThemeManager.Apply(_theme); };
+        radius.ValueChanged += (_, e) => { _theme.Vars["radius"] = ((int)e.NewValue).ToString(CultureInfo.InvariantCulture) + "px"; ThemeManager.Apply(_theme, withAccent: false); };
         MetaRow(Loc.T("editor.radius"), radius);
         stack.Children.Add(meta);
 
@@ -125,7 +125,7 @@ public sealed class ThemeEditorWindow : Window
             row.Children.Add(new TextBlock { Text = Loc.T("token." + token), VerticalAlignment = VerticalAlignment.Center, Foreground = Res("TextStrongBrush") });
             var swatch = new ColorSwatchButton(ColorUtil.Parse(resolved.GetValueOrDefault(token), Colors.Magenta)) { AllowAlpha = token == "selection" };
             var tokenName = token;
-            swatch.ColorPicked += c => { _theme.Vars[tokenName] = ColorUtil.ToHex(c); ThemeManager.Apply(_theme); };
+            swatch.ColorPicked += c => { _theme.Vars[tokenName] = ColorUtil.ToHex(c); ThemeManager.Apply(_theme, withAccent: false); };
             Grid.SetColumn(swatch, 1);
             row.Children.Add(swatch);
             colors.Children.Add(row);

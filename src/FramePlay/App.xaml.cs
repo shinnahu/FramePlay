@@ -76,6 +76,7 @@ public partial class App : Application
         var history = History.Load();
         Log.Timing("settings and history");
         Loc.I.SetLanguage(Settings.Language);
+        ThemeManager.AccentOverride = Settings.AccentColor;
         ThemeManager.Apply(ThemeManager.Find(Settings, Settings.Theme));
         Log.Timing("resources and settings ready");
 

@@ -39,15 +39,41 @@ public static class ThemeManager
         return d;
     }
 
+    /// <summary>
+    /// Accent picked in Settings › Appearance (#rrggbb), or null for the theme's own. It replaces the accent
+    /// and the colours that follow it (seek bar, volume, buttons that are on, selection) in every theme.
+    /// </summary>
+    public static string? AccentOverride { get; set; }
+
+    /// <summary>Ready-made accents offered in Settings, in hue order.</summary>
+    public static readonly string[] AccentPresets =
+        ["#ff4b4b", "#ffa14b", "#ffd84b", "#9bf200", "#00f2ea", "#4b9dff", "#9b6bff", "#f200e8", "#ff4b8d"];
+
+    /// <summary>The theme's colours with <see cref="AccentOverride"/> on top: what the player shows.</summary>
+    public static Dictionary<string, string> ResolveShown(ThemeDefinition t)
+    {
+        var d = Resolve(t);
+        if (!ColorUtil.TryParse(AccentOverride, out var c)) return d;
+        c = Color.FromRgb(c.R, c.G, c.B);
+        var hex = ColorUtil.ToHex(c);
+        foreach (var role in AccentRoles) d[role] = hex;
+        d["accent"] = hex;
+        // Text and icons on the accent: white where it reads (3:1, like the default blurple), else near-black.
+        d["accent-text"] = ColorUtil.Contrast(Colors.White, c) >= 3 ? "#ffffff" : "#141414";
+        d["selection"] = ColorUtil.ToHex(ColorUtil.WithAlpha(c, t.Base == "light" ? 0.25 : 0.35));
+        return d;
+    }
+
     public static double RadiusOf(Dictionary<string, string> v)
     {
         var s = v.GetValueOrDefault("radius", "8px").Trim().Replace("px", "");
         return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var r) ? Math.Clamp(r, 0, 24) : 8;
     }
 
-    public static void Apply(ThemeDefinition t)
+    /// <param name="withAccent">False in the theme editor, which shows the theme's own colours.</param>
+    public static void Apply(ThemeDefinition t, bool withAccent = true)
     {
-        var v = Resolve(t);
+        var v = withAccent ? ResolveShown(t) : Resolve(t);
         var fallback = t.Base == "light" ? BuiltInThemes.LightBase : BuiltInThemes.DarkBase;
         Color C(string k) => ColorUtil.Parse(v.GetValueOrDefault(k), ColorUtil.Parse(fallback.GetValueOrDefault(k, fallback["accent"]), Colors.Magenta));
         var res = Application.Current.Resources;

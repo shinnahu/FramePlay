@@ -79,6 +79,8 @@ Hover the seek bar to preview any moment.
 
 It ships with the MarkNotes themes. You can create, edit, import and export your own as `.mntheme` files, which MarkNotes opens too. A theme can also give the seek bar, the volume and the buttons that are on their own colours, as the PS1 theme does with the four PlayStation button colours.
 
+To change just the accent, pick one of the colour circles under **Settings › Appearance › Accent color**, or any colour with the last circle. It recolours the play button, the seek and volume bars and the buttons that are on, in every theme; the first circle goes back to the theme's own accent.
+
 ![FramePlay in six themes: Dark, Light, Dracula, YoRHa, EVA-01 and Neon Arcade](docs/images/themes.png)
 
 ## What it plays

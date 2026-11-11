@@ -499,11 +499,85 @@ public partial class SettingsWindow : Window
         buttons.Children.Add(Btn(T("app.import"), ImportThemes));
         buttons.Children.Add(Btn(T("app.export"), ExportTheme));
         Page.Children.Add(buttons);
+        AccentSection();
+    }
+
+    // ---- accent colour ----
+    /// <summary>
+    /// Circles that replace the theme's accent: the theme's own colour first, the ready-made ones, then one
+    /// that opens the colour picker for any colour.
+    /// </summary>
+    private void AccentSection()
+    {
+        var current = ThemeManager.AccentOverride;
+        var themeAccent = ColorUtil.Parse(ThemeManager.Resolve(ThemeManager.Current).GetValueOrDefault("accent"), Colors.Gray);
+        var circles = new WrapPanel { Margin = new Thickness(12, 0, 12, 10) };
+        circles.Children.Add(AccentCircle(new SolidColorBrush(themeAccent), null, Loc.F("app.accent.theme", ColorUtil.ToHex(themeAccent)),
+            current == null, () => SetAccent(null, rebuild: true)));
+        bool preset = false;
+        foreach (var hex in ThemeManager.AccentPresets)
+        {
+            bool on = string.Equals(current, hex, StringComparison.OrdinalIgnoreCase);
+            preset |= on;
+            circles.Children.Add(AccentCircle(new SolidColorBrush(ColorUtil.Parse(hex, Colors.Gray)), null, hex, on, () => SetAccent(hex, rebuild: true)));
+        }
+
+        // Any colour: a rainbow circle, with the chosen colour in the middle once it's in use.
+        bool custom = current != null && !preset;
+        var rainbow = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+        foreach (var (stop, hex) in new[] { (0.0, "#ff4b4b"), (0.2, "#ffd84b"), (0.4, "#9bf200"), (0.6, "#00f2ea"), (0.8, "#4b9dff"), (1.0, "#f200e8") })
+            rainbow.GradientStops.Add(new GradientStop(ColorUtil.Parse(hex, Colors.Gray), stop));
+        var customColor = custom ? ColorUtil.Parse(current, themeAccent) : themeAccent;
+        FrameworkElement? picker = null;
+        picker = AccentCircle(rainbow, custom ? new SolidColorBrush(customColor) : null,
+            custom ? $"{T("app.accent.custom")} ({current})" : T("app.accent.custom"), custom, () =>
+            {
+                // Live while dragging; the page is rebuilt (to move the ring) once the picker closes.
+                var popup = ColorPicker.Show(picker!, customColor, false, c => SetAccent(ColorUtil.ToHex(Color.FromRgb(c.R, c.G, c.B)), rebuild: false));
+                popup.Closed += (_, _) => Build();
+            });
+        circles.Children.Add(picker);
+
+        var text = new StackPanel { Margin = new Thickness(16, 12, 16, 10) };
+        text.Children.Add(new TextBlock { Text = T("app.accent"), Foreground = Res("TextStrongBrush"), FontSize = 13.5 });
+        text.Children.Add(new TextBlock { Text = T("app.accent.desc"), Foreground = Res("TextMutedBrush"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) });
+        var stack = new StackPanel();
+        stack.Children.Add(text);
+        stack.Children.Add(circles);
+        Card(stack).Margin = new Thickness(0, 18, 0, 0);
+    }
+
+    /// <summary>A round colour choice; <paramref name="inner"/> draws a smaller circle in the middle.</summary>
+    private FrameworkElement AccentCircle(Brush fill, Brush? inner, string tip, bool selected, Action onClick)
+    {
+        var dot = new Grid { Width = 24, Height = 24 };
+        dot.Children.Add(new System.Windows.Shapes.Ellipse { Fill = fill });
+        if (inner != null) dot.Children.Add(new System.Windows.Shapes.Ellipse { Fill = inner, Width = 12, Height = 12 });
+        var ring = new Border
+        {
+            Width = 34, Height = 34, CornerRadius = new CornerRadius(17), BorderThickness = new Thickness(2), Padding = new Thickness(3),
+            Margin = new Thickness(0, 0, 4, 4), Child = dot, Cursor = Cursors.Hand, ToolTip = tip, Background = Brushes.Transparent,
+            BorderBrush = selected ? Res("TextStrongBrush") : Brushes.Transparent,
+        };
+        ring.MouseEnter += (_, _) => { if (!selected) ring.BorderBrush = Res("LineBrush"); };
+        ring.MouseLeave += (_, _) => { if (!selected) ring.BorderBrush = Brushes.Transparent; };
+        ring.MouseLeftButtonUp += (_, _) => onClick();
+        return ring;
+    }
+
+    private void SetAccent(string? hex, bool rebuild)
+    {
+        _s.AccentColor = hex;
+        ThemeManager.AccentOverride = hex;
+        ThemeManager.Apply(ThemeManager.Current);
+        Changed();
+        if (rebuild) Build();
     }
 
     private FrameworkElement ThemeCard(ThemeDefinition t)
     {
-        var v = ThemeManager.Resolve(t);
+        // As it will look, with the accent picked below.
+        var v = ThemeManager.ResolveShown(t);
         Brush B(string k) => new SolidColorBrush(ColorUtil.Parse(v.GetValueOrDefault(k), Colors.Magenta));
         bool selected = ThemeManager.Current.Id == t.Id;
 
@@ -587,7 +661,8 @@ public partial class SettingsWindow : Window
         var copy = new ThemeDefinition
         {
             Id = ThemeFiles.NewId(), Name = Loc.F("editor.myVersion", current.Name), Author = Environment.UserName,
-            Base = current.Base, Vars = ThemeManager.Resolve(current), Custom = true,
+            // From what's on screen, so a picked accent carries over into the new theme.
+            Base = current.Base, Vars = ThemeManager.ResolveShown(current), Custom = true,
         };
         var editor = new ThemeEditorWindow(this, copy, current);
         if (editor.ShowDialog() == true)

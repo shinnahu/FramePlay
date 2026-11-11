@@ -78,6 +78,8 @@ public sealed class AppSettings
 
     // Appearance
     public string Theme { get; set; } = "dark";
+    /// <summary>An accent colour (#rrggbb) that replaces the theme's own; null keeps the theme's.</summary>
+    public string? AccentColor { get; set; }
     public List<ThemeDefinition> CustomThemes { get; set; } = new();
 
     // Windows
